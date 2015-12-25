@@ -231,3 +231,6 @@ git checkout MainActivity.java
 提交到远程仓库
 git push origin master
 
+
+linux gitg client可以方便的以图形化的方式查看git repsitory
+
