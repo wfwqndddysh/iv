@@ -1,0 +1,188 @@
+===============================================================================
+模型    OpenStack Networking API 基于一个简单的模型（包含虚拟网络、子网和端口抽
+        象）来描述网络资源
+
+虚拟网络(network)   隔离的2层网段，类似于物理中的虚拟LAN(VLAN), 更具体来讲，它
+                    是为创建它的租户而保留的一个广播域，或者被显式配置为共享网
+                    段。网络也是 Neutron API 的主要目标。换句话说，端口和子网始
+                    终被分配给某个特定的网络。
+
+子网(subnet)    是一组 IPv4 或 IPv6 地址以及与其有关联的配置。它是一个地址池，
+                OpenStack 可从中向虚拟机 (VM) 分配 IP 地址。每个子网指定为一个
+                无类别域间路由 (Classless Inter-Domain Routing) 范围，必须与一
+                个网络相关联。除了子网之外，租户还可以指定一个网关、一个域名系
+                统 (DNS) 名称服务器列表，以及一组主机路由。这个子网上的 VM 实例
+                随后会自动继承该配置
+
+                不同子网间的通信需要路由器的支持，这个Neutron和物理网络下是一致
+                的。Neutron中子网隶属于网络。
+
+端口    是一个虚拟交换机连接点。一个 VM 实例可通过此端口将它的网络适配器附加到
+        一个虚拟网络。在创建之后，一个端口可从指定的子网收到一个固定 IP 地址。
+        API 用户可从地址池请求一个特定的地址，或者 Neutron 可以分配一个可用的IP
+        地址。OpenStack 还可以定义接口应使用的媒体访问控制地址。在取消分配该端
+        口后，所有已分配的 IP 地址都会被释放并返回到地址池。
+
+
+L3 route   路由器，提供路由，NAT等服务
+L2 network 租户私有
+
+openstack neutron 模型，UI介绍
+https://www.ustack.com/blog/neutron_intro/
+
+openstack neutron 详细解释
+http://www.cnblogs.com/sammyliu/p/4419195.html
+
+openstack 网络迷宫解析
+http://blog.kongfy.com/2015/05/openstack%E7%BD%91%E7%BB%9C%E8%BF%B7%E5%AE%AB%EF%BC%9Aneutron%E4%BB%A5%E5%8F%8Albaas/
+
+openstack 官方链接中的中文文档
+http://yeasy.gitbooks.io/openstack_understand_neutron/content/concept/index.html
+
+openstack neutron 资料整理
+http://www.cnblogs.com/sammyliu/p/4658746.html
+
+openstack 缺陷
+https://tsz.me/2015/05/26/neutron.html
+
+说明了不同compute node br-int 上的相同vlan id没有任何关系，它们可能对应不同的tenant network
+http://www.lxway.com/18599546.htm
+
+openstack 网络模型
+
+Network:    一个具有 tenant 隔离性的虚拟 2 层网络，它使用一个虚拟交换机。除了用
+            于与外网连接的网络外，其它的 network 都只属于创建它的 tenant。 虚机
+            在创建时必须选择至少一个 network，也可以选择使用多块网卡和多个
+            network 连接。network 内部在L2是通的。network之间L2是不通的,L3呢？
+            目前没有看到network之间在L3上如何通信(外部网络和非外部网络的通信除外）
+            ，router也只是让它所属的network内部的subnet之间L3互通,以及让它所属的
+            network和外部network 在L3互通
+
+            创建一个tenant network时就会创建一个linux network namespace
+
+Subnet:     表示一个 IPv4 或者 IPv6 地址区间，该区间内的地址可以被分配给虚机。
+            一个 Subnet 可以使用一个 DHCP Server 用于分配指定区间内的 IP 地址给
+            虚机。
+
+Port:       表示给定 network 上的一个虚拟交换端口，一个 Port 和虚机的一个网卡直
+            接连接。
+
+Router:     在 subnet IP 段之间转发 IP 包，使用一个 external gateway 和外网连接，
+            以及连接若干个 subnet(目前看来这些subnet是不能跨network的，哪怕它们
+            属于同一租户?这个是有疑问的)。
+
+
+关系：
+
+（1）tenant ---- 1:n ---- network    -------- 1:n ---- subnet             （一个 tenant 可以拥有多个 network，一个 network 可以包含多个 subnet）
+
+（2）network --- 1:n ---- port(vinf自解) ---- 1:1 ---- subnet             （一个network 可以有多个 port， 每个 port 连接一个 subnet）（若创建虚机时指定的是 net-id，那么虚机将随机地从该 network 包含的 subnet 中分配 IP）
+
+（3）VM -------- 1:n ---- NIC --------------- 1:1 ---- port               （一个 VM 可以有多个 NIC，每个 NIC 连接一个 port）（可以在创建虚机时指定一个或者多个 port）
+
+（4）Tenant ---- 1:n ---- Router ------------ 1:n ---- subnet/ext-network （一个 tenant 可以拥有多个 router，每个 router 在 Neutron network 节点上使用一个 Linux network namespace，其 ID 就是 neutron router-list 得到的 router 的 ID； 一个 router 连接一个通向外网的 gateway 和多个该 tenant 的 subnet）
+
+（5）network --- 1:1 ---- Dnamasq  ---------- 1:n ---- subnet             （一个 network 有一个 Dnsmasq 进程，该进程为多个启动了 DHCP 的 subnet 服务，分配它们拥有的 IP 给虚机）
+
+
+
+
+compute node:   隔离不同租户的虚拟机和进行一些基本的安全策略
+    ovs-agent
+
+
+neutron node
+    agent
+
+
+controller node
+    neutron server
+
+
+Neutron Provider Networks:  作为external-network，挂在某个vrouter上之后，用来访
+                            问外网
+
+Neutron Tenant Networks:
+
+通过 linux namespace 来隔离租户网络？
+
+
+===============================================================================
+实现:
+br-int  内部bridge, 使用vlan来隔离不同网络, 也就是说，一台compute节点最多有4096
+        个不同网络(上的vm)
+
+br-tun
+
+
+concepts
+    东西流量
+    南北流量
+
+
+notes:
+    之所以 TAP 设备 A 没有直接连接到网桥br-int上，是因为 OpenStack 需要通过
+    iptables 实现 security group 的安全策略功能。目前 openvswitch 并不支持应用
+    iptables 规则的 Tap 设备。
+
+
+隧道网桥 br-tun所做的重要的工作就是将所有的租户网络分别映射到对应的GRE隧道ID上，
+通过Open Flow来在 br-int网络流的VLAN tag和GRE隧道ID之间做转换。另外，GRE隧道的
+ID字段长度为32位，也就是说只要各个节点做好 br-int上的VLAN tag和GRE ID之间的转
+换，我们可以创造2^32个租户网络（VXLAN中VNI字段也有24位长，即可以创建2^24个租户
+网络）！这里隐藏一个潜在的限制，每个单独的节点上不能有超过4096个租户网络…目前来
+说这对Compute Node来说并不是问题（单节点虚拟化4096个虚拟机是难以想象的），而对
+网络节点来说，可以使用多台网络节点来解决这个问题。
+
+
+网络的一种划分方法，也是一种理解方法
+    OpenSack Cloud network：OpenStack 所管理的网络。
+    External network：数据中心所管理的的公司网（Intranet） ，虚机使用的 Floating IP 是这个网络的地址的一部分。
+    Internet：由各大电信运营商所管理的公共网络，使用公共IP。
+
+
+租户网络即虚机之间通信的网络的连通性:
+    同主机和不同主机上一个网段内的虚机之间的连接性：虚拟二层网络，走物理二层（VLAN）或者三层（GRE/VxLAN）网络。
+    不同网段内的虚机之间的连通性：经过物理（VLAN）或者 Neutron Virtual router
+    虚机和外部网络之间的连通性：经过物理路由器（给 VLAN 虚拟网络实用的物理交换机连接的路由器）或者 Neutron Virtual router网络（network）、子网（subnet）、端口 （port）、交换机（switch）、路由器（router）等网络组件。
+
+
+跨子网的通信需要走虚拟路由器。同物理路由器一样，虚拟路由器由租户创建，拥有多个 virtual interface，连接一个租户的子网，以及外部网络。它具有以下特性：
+    一个VR 只属于创建它的租户，只用于该租户的子网之间和子网与外网的路由
+    同一网络内的若干子网可以挂在一个 VR 上
+    同一租户的不同网络的没有 IP 地址重叠的子网可以挂在一个 VR 上
+    不同租户之间的内网之间是不能使用 VR 的
+    同一租户的不同网络内的有 IP 地址重叠的两个子网不能使用同一个 VR（添加子网到 VR 时会报错）
+    在网络节点上，一个 VR 运行在一个 Network namespace 内，该namespace 的名称包含该 VR 的 UUID
+
+
+DHCP 服务是网络环境中必须有的。Neutron 提供基于 Dnamasq 实现的虚机 DHCP 服务，向租户网络内的虚机动态分配固定 IP 地址。它具有以下特性：
+    一个网络可以有多个运行在不同物理网络节点上的 DHCP Agent，同时向网络内的虚机提供服务
+    一个 DHCP Agent 只属于一个网络，在网络节点上运行在一个 network namespace 内
+    网络内的子网共享该 DHCP Agent
+
+
+Neutron 实现了不同层次的租户网络隔离性：
+    租户之间的网络是三层隔离的，连通过 VR 做路由都不行，实在要连通的话，需要走物理网络
+    一个租户内的不同网络之间二层隔离的，需要通过 VR 做三层连通
+    一个网络内的不同子网也是二(三？)层隔离的，需要通过 VR 做三层连通
+
+
+对一个租户的不同网络，Neutron 给每一个网络（network）产生的流量（traffic）在二层或者三层分配一个唯一的 segmentation_id，使得同一网络内的两个虚机之间好像建立了一个虚机的通道（tunnel）一样，而不同网络的tunnel之间是互相隔离的。根据物理实现不同，该ID被实现为：
+    VLAN ID
+    GRE Tunnel ID
+    VxLAN VNI
+
+
+问题:
+一个网络节点最多可以管理4096个租户？,因为在br-int上是按照vlan来区分租户的
+
+
+fixed ip vm 的private地址
+float ip vm 的erternal地址(dnat，vm作为external server时使用)
+
+
+ARP PROXY
+DVR
+VRRP
+
