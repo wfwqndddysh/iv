@@ -1,0 +1,2 @@
+gitg --git gui client
+iftop --network 流量监测
