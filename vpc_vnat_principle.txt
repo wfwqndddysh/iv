@@ -1,0 +1,67 @@
+10.0.0.0/24(gw=10.0.0.1)是vpc内部的一个子网(私有ip),称为network_01(由gui创建)
+
+192.168.24.0/24 (start_ip=192.168.24.100, end_ip=192.168.24.150),
+是external network, 称为veth_01(由gui创建)
+
+start_ip=10.0.0.3, ipWildMask=0.0.0.254, external_ip(现在前台叫public_ip)=192.168.24.100
+是一个vnat，用来实现network_01内部的虚拟机上公网(称为vnat_01_for_vpc_01_network_01)
+
+
+vm A---------->s-vrouter------>m-vrouter----------->(extern network gw)------>public_ip
+10.0.0.5------>10.0.0.1------->192.168.24.100------>192.168.24.1------------->172.16.22.8
+
+
+出去时源地址的修改在table 6(SNAT)
+table是个route表, 通过它可以找到虚拟机，或者找到外部网络接口
+
+出外网
+flow_a:table=6, idle_timeout=600, priority=310, vpc_id=1, nw_dst=10.0.0.3, nw_dst=192.168.22.190, tp_src=42583, tp_dst=22,
+actions=mod_nw_src:192.168.24.100, mod_tp_src:49153, mod_dl_src:02:16:3e:00:00:01, mod_dl_dst:46:07:b9:a3:75:82, set_vpcid=0, mod_vlan_vid:1, resubmit(,7)
+
+进入vpc内部的虚拟机
+flow_b:table=6, idle_timeout=30, priority=220, ip, vpc_id=1, dl_dst=02:16:3e:00:00:01, nw_dst=10.0.0.3,
+actions=mod_dl_dst:02:16:3e:74:45:fc, mod_dl_src:02:3e:00:00:01, mod_vlan_vid:12, resubmit(,7)
+
+
+进入tap_vrouter
+flow_c:table=6, priority=200, ip, vpc_id=2, dl_dst=02:16:3e:00:00:01,
+actions=encap(00:00:00:00:00:00, 00:00:00:00:00:00, 0,0,0,0, 2), output:tap_vrouter
+flow_d:table=6, priority=200, ip, vpc_id=1, dl_dst=02:16:3e:00:00:01,
+actions=encap(00:00:00:00:00:00, 00:00:00:00:00:00, 0,0,0,0, 1), output:tap_vrouter
+
+
+处理external network arp
+由vrouter来应答192.168.24.100的地址
+flow_e:table=6, priority=200, arp, vpc_id=0, nw_dst=192.168.24.100, arp_op=1, actions=output:tap_vrouter
+192.168.24.100需要知道它的网关192.168.24.1的地址, 如果是应答192.168.24.100, 自然是要交给tap_vrouter的
+(为什么还要继续resubmit到table7____???____, 一种可能是让系统中所有的vrouter都知道192.168.24.1的地址，
+这样在vrouter role切换时便不用再次寻找192.168.24.1的地址)
+flow_f:table=6, priority=200, arp, vpc_id=0, nw_dst=192.168.24.100, arp_op=2, actions=resubmit(,7), output:tap_vrouter
+
+
+vpc_1内部想要获得10.0.1.1/24网络的网关的地址(arp请求), 由vrouter来回答网关的mac地址，
+因为10.0.0.1这个网关是虚拟的,是由vrouter代理实现网关功能的
+flow_g:table=6, priority=200, arp, vpc_id=1, nw_dst=10.0.1.1, arp_op=1,
+actions=encap(00:00:00:00:00:00, 00:00:00:00:00:00, 0,0,0,0, 1), output:tap_vrouter
+
+
+为了让不同网络(不同vlan)之间互通,vrouter可能需要知道网络中的vm的mac，所要可能会发送arp请求给虚拟机，
+当有应答时发给tap_vrouter, vrouter会缓冲起来
+(为什么还要resubmit到table7____???____, 可能是让其他vrouter也把这个mac缓冲起来，但是如何做到避免环路
+的形成?)
+flow_h:table=6, priority=200, arp, vpc_id=1, nw_dst=10.0.1.1, arp_op=2,
+actions=encap(00:00:00:00:00:00, 00:00:00:00:00:00, 0,0,0,0, 1), resubmit(,7), output:tap_vrouter
+
+
+进来时目的地址的修改在table 3(DNAT)
+flow_i:table=3, priority=200, tcp, vpc_id=0, nw_src=192.168.22.190, nw_dst=192.168.24.100, tp_src=22, tp_d=49153,
+actions=mod_nw_dst:10.0.0.3, mod_tp_dst:42538, fin_timeout(idle_timeout=1), set_vpcid:1, resubmit(,4)
+通过这一步修改，就可以通过table=6中的flow_b进入虚拟机
+
+
+slave-vrouter中的vnat在table=6把对外网的访问forward到master-vrouter
+flow_j:table=6, idle_timeout=60, ip, vpc_id=1, dl_dst=02:16:3e:00:00:01, nw_src=10.0.0.4, nw_dst=192.168.22.190,
+actions=encap:(00:25:94:90:62:f6:05, 0.0.0.0, 0.0.0.0, 1)output:1
+这里master的地址是如何知道的？floodlight下发下来的。
+那么floodlight如何得知这个master的mac地址?是从master到floodlight的portstatus消息中读取出来的
+
