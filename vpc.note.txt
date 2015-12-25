@@ -1,0 +1,81 @@
+VMware NSX和Hyper-V对网络虚拟化中Packet forwarding的行为作出了详细文档描述，但是亚马逊没有任何相关文档来说明AWS VPC中的Packet forwarding机制，尽管亚马逊采用的是私有的解决方案（深度定制的Xen Hypervisor和自行定制的虚拟交换机），但是通过分析AWS的网络特征和用户文档搞清楚它的一些细节也不是一件很困难的事情。
+
+Chiradeep Vittal通过运行一系列测试写了一篇博客来分享他的心得，总结如下：
+
+1. 亚马逊VPC的虚拟交换机只做L3 unicast IPV4 forwarding（类似于最新的Hyper-V网络形态），所有的非IPv4流量和IPv4多播和广播会被drop掉。
+2. 在Hypervisor层虚拟交换机中L3的转发并不减TTL，看起来就像所有的虚拟机都处于同一个子网中。（猜测：毫无疑问，此功能需要有类似避免回路出现的功能辅助，否则网络可能会被阻塞。）
+3. Hypervisor代理了所有的ARP请求并且回复目标虚拟机的MAC地址或第一跳的网关地址（早期的AWS VPC实现使用相同的目的MAC地址回复所有的ARP请求）
+4. 虚拟交换机实现了类似路由的功能，例如，如果ping的是默认网关会响应，如果ping的是其它子网的网关，数据包会被drop掉。
+
+这种实现看起来平淡无奇， 但是，慢着，这还不是全部，Amazon VPC转发模型绝妙的地方在于，他是multi-VRF（multiple routing tables）机制，用户可以在VPC中创建multiple routing tables并把他们当中的某个分配给其中一个子网。
+
+
+你可以，举例来说，使用默认路由来路由internet发起的请求，并把这些请求路由到web server所在的子网，把访问数据库的请求路由到你自己的数据中心，对应用服务器之间的网络请求（本地链接）使用非默认路由等等，如果你是一个MPLS/VPN geek用这一特性来分拆路由表这是一个很cool的特性，但是，同时对于那些想要把已经存在的L2网络migrate到云中的用户来说也是一个挑战。
+
+Multi-tenant deployments with virtual firewalls;
+Userspace solutions: from Cisco Cloud Services Router and CohesiveFT VNS3 to Cisco Nexus 1000V Interlink and CloudSwitch;
+Layer-2 solutions (VLANs, Metro Ethernet, Edge Virtual Bridging – 802.1Qbg)
+MAC-over-IP solutions (VXLAN, Hyper-V Network Virtualization, VMware NSX)
+IP-over-IP solutions (Juniper Contrail, Amazon EC2)
+
+We have the building blocks to provide service to a single client in this way, as an ad-hoc solution.
+We can bring up point-to-point circuits or a layer 3 Virtual Private Network (VPN). We can connect
+them with Virtual Routing/Forwarding instances (VRFs), or logical routers, or their own physical
+routers, depending on their needs.
+
+
+Virtual Networks
+Virtual Networks (VNs) are a key concept in the Contrail system. VNs are logical constructs implemented on top of 
+the physical networks. They are used to replace VLAN-based isolation and provide multi-tenancy in a virtualized data 
+center. Each tenant or an application can have one or more virtual networks. Each virtual network is isolated from all 
+the other virtual networks unless explicitly allowed by security policy. 
+VNs can be connected to and extended across physical MPLS Layer 3 virtual private networks (L3VPNs) and Ethernet 
+VPNs (EVPNs) using a datacenter edge router.
+Virtual networks are also used to implement NFV and service chaining. How this is achieved using virtual networks is 
+explained in detail in the 
+Service Chaining section.
+
+
+There are many network virtualization technologies such as VLANs to provide isolation at Layer 2,
+VRF-Lite, Firewall contexts and Load balancer contexts to provide isolation at Layers 3-7. In some cases,
+Layer 2 isolation is sufficient, but in other cases,
+providers need to implement a combination of these isolation approaches based on the services they want to offer and resources they have in their infrastructure.
+随着认识的深入,个人以为,VXLAN主要具有下列三大优点:
+１,突破传统VLAN号1-4094的限制;
+２,基础网络用软件来定义,传统VLAN需要去手工配置硬件交换机,VXLAN用软件定义的方式配置vlan号;
+３,overlay天生带来的跨三层的虚拟大二层;
+
+但是,VXLAN与GRE一样,归根结底,是point-to-point的,要想做到site-to-site还得VPN,并且VPN可以在路由器上采取类似namespace的方式来实现不同用户(tenant)的路由隔离与学习.
+
+具体到openstack的vxlan实现中,由于它是point-to-point的,所以vxlan l2 agent运行在计算节点,而不是路由节点上.
+而计算节点本身在二层就是通的,除非vxlan可以对不同的数据中心的计算节点上建点对点的vxlan遂道,否则,openstack的vxlan实现不具备上述第３大优点,即使这块能做,跨数据中心vxlan的二层地址学习也是一个问题.
+
+所以openstack中的vxlan实现也就剩下上述的１,２两个优点.　对于实际的生产环境,如果规模不大的话,尤其像企业级这类玩具级规模的话,vxlan不是最好的选择,也没几个硬件交换机,也用不了几个vlan号,用vlan就挺好. 当然,规模巨大的话,另当别论.
+
+
+VXLAN
+GRE
+point-to-point
+site-to-site
+VPN namespace multi-tenant
+VTEP(Vxlan Tunneling End Point)
+GRE Tunneling
+
+GRE的缺点
+要让这三个网络互联，我们需要建立三个 GRE tunnel。如果网络数量再增长，那么需要的 tunnel 数量更多。换句话说，GRE tunnel 的扩展性太差，从根本上讲还是因为它只是一个 point to point 的 tunnel。
+
+
+TOR switch mac table 耗尽
+汇聚层 STP 高负荷
+
+
+利用ip多播封装广播和多播报文
+    限制虚拟网络的广播域
+
+http://www.yellow-bricks.com/2012/11/02/vxlan-use-cases/
+http://www.borgcube.com/blogs/2011/11/vxlan-primer-part-1/
+http://www.borgcube.com/blogs/2012/03/vxlan-primer-part-2-lets-get-physical/
+http://it20.info/2012/05/typical-vxlan-use-case/
+
+Vxlan深度研究:百度文库
+

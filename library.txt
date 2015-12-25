@@ -1,2 +1,2 @@
-restclient --simple rest client cpp
-zlog       --light weight log lib c
+restclient-cpp --simple rest client cpp
+zlog --light weight log lib c
