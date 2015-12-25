@@ -79,3 +79,18 @@ http://it20.info/2012/05/typical-vxlan-use-case/
 
 Vxlan深度研究:百度文库
 
+
+
+关于gratuaious arp的作用，
+
+They can help detect IP conflicts.
+They assist in the updating of other machines' ARP tables.(clustering migrate)
+They inform switches of the MAC address of the machine on a given switch port
+Every time an IP interface or link goes up, the driver for that interface will 
+typically send a gratuitous ARP to preload the ARP tables of all other local hosts.
+
+可以用在HA方案中, for example High-Availability Linux Project
+
+
+
+https://wiki.wireshark.org/Gratuitous_ARP
