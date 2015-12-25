@@ -1,0 +1,233 @@
+你可以使用分支,remote或标签名来代替SHA串名, 它们只是指向某个对象的指针.
+假设你的master分支目前在提交(commit):'980e3'上, 现在把它推送(push)到
+origin上并把它命名为标签'v1.0', 那么下面的串都会被git视为等价的:
+
+980e3ccdaac54a0d4de358f3fe5d718027d96aae
+origin/master
+refs/remotes/origin/master
+master
+refs/heads/master
+v1.0
+refs/tags/v1.0
+
+分支(branch), 远程跟踪分支(remote-tracking branch)以及标签(tag)都是对提交的引用.
+所有的引用是用"refs"开头, 以斜杠分割的路径. 到目前为此, 我们用到的引用名称其实
+是它们的简写版本:
+
+- 分支"test"是"refs/heads/test"的简写.
+- 标签"v2.6.18"是"refs/tags/v2.6.18"的简写.
+- "origin/master"是"refs/remotes/origin/master"的简写.
+偶尔的情况下全名会比较有用, 例如你的标签和分支重名了, 你应该用全名去区分它们.
+
+另一个有用的技巧是, 仓库的名字可以代表该仓库的HEAD. 例如, "origin"是访问"origin"
+中的HEAD分支的一个捷径
+
+
+
+追踪分支
+git branch --track experimental origin/experimental
+
+
+Git的撤消操作 - 重置, 签出 和 撤消
+
+Git提供了多种修复你开发过程中的错误的方法. 方法的选择取决于你的情况: 包含有错误
+的文件是否提交了(commited); 如果你把它已经提交了, 那么你是否把有错误的提交已与
+其它人共享这也很重要.
+
+修复未提交文件中的错误(重置)
+
+如果你现在的工作目录(work tree)里搞的一团乱麻, 但是你现在还没有把它们提交; 你可
+以通过下面的命令, 让工作目录回到上次提交时的状态(last committed state):
+
+git reset --hard HEAD
+这条件命令会把你工作目录中所有未提交的内容清空(当然这不包括未置于版控制下的文件
+untracked files). 从另一种角度来说, 这会让"git diff" 和"git diff --cached"命令
+的显示法都变为空.
+
+如果你只是要恢复一个文件,如"hello.rb", 你就要使用 git checkout
+
+$ git checkout -- hello.rb
+这条命令把hello.rb从HEAD中签出并且把它恢复成未修改时的样子.
+
+译者:上面二行和原文有出入，经验证是原文有误,所以我据正确的重写了.
+
+修复已提交文件中的错误
+
+如果你已经做了一个提交(commit),但是你马上后悔了, 这里有两种截然不同的方法去处理
+这个问题:
+
+1 创建一个新的提交(commit), 在新的提交里撤消老的提交所作的修改. 这种作法在你已经
+把代码发布的情况下十分正确.
+2 你也可以去修改你的老提交(old commit). 但是如果你已经把代码发布了,那么千万别这
+么做; git不会处理项目的历史会改变的情况,如果一个分支的历史被改变了那以后就不能
+正常的合并.
+
+创建新提交来修复错误
+
+创建一个新的，撤消(revert)了前期修改的提交(commit)是很容易的; 只要把出错的提交
+(commit)的名字(reference)做为参数传给命令: git revert就可以了; 下面这条命令就演
+示了如何撤消最近的一个提交:
+
+git revert HEAD
+这样就创建了一个撤消了上次提交(HEAD)的新提交, 你就有机会来修改新提交(new commit)
+里的提交注释信息.
+
+你也可撤消更早期的修改, 下面这条命令就是撤消“上上次”(next-to-last)的提交:
+
+git revert HEAD^
+在这种情况下,git尝试去撤消老的提交,然后留下完整的老提交前的版本.　如果你最近的
+修改和要撤消的修改有重叠(overlap),那么就会被要求手工解决冲突(conflicts),　就像
+解决合并(merge)时出现的冲突一样.
+
+译者注: git revert 其实不会直接创建一个提交(commit), 把撤消后的文件内容放到索引
+(index)里,你需要再执行git commit命令，它们才会成为真正的提交(commit).
+
+修改提交来修复错误
+
+如果你刚刚做了某个提交(commit), 但是你又想马上修改这个提交; git commit 现在支持
+一个叫--amend的参数，它能让你修改刚才的这个提交(HEAD commit). 这项机制能让你在
+代码发布前,添加一些新的文件或是修改你的提交注释(commit message).
+
+如果你在老提交(older commit)里发现一个错误, 但是现在还没有发布到代码服务器上. 
+你可以使用 git rebase命令的交互模式, "git rebase -i"会提示你在编辑中做相关的修
+改. 这样其实就是让你在rebase的过程来修改提交.
+
+
+如何取得某个tag对应的代码？
+先 git clone 整个仓库，然后 git checkout tag_name 就可以取得 tag 对应的代码了。
+但是这时候 git 可能会提示你当前处于一个“detached HEAD" 状态，因为 tag 相当于是
+一个快照，是不能更改它的代码的，如果要在 tag 代码的基础上做修改，你需要一个分支：
+git checkout -b branch_name tag_name
+这样会从 tag 创建一个分支，然后就和普通的 git 操作一样了。
+
+
+git checkout的主要功能就是迁出一个分支的特定版本。默认是迁出分支的HEAD版本
+示例：
+git checkout master     //取出master版本的head。
+git checkout tag_name    //在当前分支上 取出 tag_name 的版本
+git checkout  master file_name  //放弃当前对文件file_name的修改
+git checkout  commit_id file_name  //取文件file_name的 在commit_id是的版本。
+commit_id为 git commit 时的sha值。
+
+
+git分支管理策略--阮一峰
+http://www.ruanyifeng.com/blog/2012/07/git.html
+git flow
+master
+develope
+* 功能（feature）分支
+* 预发布（release）分支
+* 修补bug（fixbug）分支
+
+Understanding the Git Workflow
+https://sandofsky.com/blog/git-workflow.html
+
+Git 使用规范流程--阮一峰
+http://www.ruanyifeng.com/blog/2015/08/git-use-process.html
+
+pro git
+http://git-scm.com/book/zh/v2/%E8%B5%B7%E6%AD%A5-%E5%85%B3%E4%BA%8E%E7%89%88%E6%9C%AC%E6%8E%A7%E5%88%B6
+git community book
+http://gitbook.liuhui998.com/index.html
+
+git常用命令
+http://blog.csdn.net/hangyuanbiyesheng/article/details/6731629
+
+
+
+3.9. Git checkout 
+3.9.1. 切换到分支 
+1) 创建一个新分支，并切换到该分支上 
+Git checkout –b 新分支名 
+2）切换到某个已经建立的本地分支local_branch 
+Git checkout local_branch 
+（使用cat .git/HEAD后，显示refs:refs/heads/ local_branch） 
+3) 切换到服务器上的某个分支remote_branch 
+Git checkout remote_branch 
+（远程分支remote_branch可以通过 git branch –r 列出） 
+4) 切换到某个commit id 
+Git checkout commit_id 
+（使用cat .git/HEAD后，显示commit_id） 
+5) 切换到某个tag 
+Git checkout tag 
+（使用cat .git/HEAD后，显示tag） 
+注意： 除了1）和2）外，其余三种都只是切换到了一个临时的( no branch )状态 （this head is detached），这时用 git branch 可以看到处于（no branch）上， cat .git/HEAD 看到指向相应的commit id。 这个（no branch）只是临时存在的，并不是一个真正建立的branch。 如果此时执行2），则这个（no branch）就自动消失了；如果执行1）， 则创建新分支 new branch，并把这个(no branch)挂到这个新分支上，此时cat .git/refs/heads/new_branch 可以看到已经指向了刚才那个commit id。 
+3.9.2. 用已有分支初始化新分支 
+执行下面的命令，在切换到某个已经建立的local branch或者某个remote branch或者某个commit id 或者某个tag的同时，创建新分支new_branch，并且挂到这个新分支上。 
+1） 切换到某个已经建立的本地分支local_branch，并且使用此分支初始化一个新分支new_branch。 
+git checkout –b new_branch local_branch 
+2) 切换到某个远程分支remote_branch，并且用此分支初始化一个新分支new_branch。 
+Git checkout –b new_branch remote_branch 
+3) 切换到某个commit id，并建立新分支new_branch 
+Git checkout –b new_branch commit_id 
+4) 切换到某个tag，并建立新分支new_branch 
+Git checkout –b new_branch tag 
+3.9.3. 还原代码 
+例如 “git checkout app/model/user.rb” 就会将user.rb文件从上一个已提交的版本中更新回来，未提交的工作目录中的内容全部会被覆盖。
+
+
+修改远程默认分支
+git symbolic-ref HEAD refs/head/my_other_branch
+
+
+删除一个远程分支时出现错误提示:
+
+$ git push --delete origin foobar
+remote: error: By default, deleting the current branch is denied, because the next
+remote: error: ‘git clone’ won’t result in any file checked out, causing confusion.
+remote: error:
+remote: error: You can set ‘receive.denyDeleteCurrent’ configuration variable to
+remote: error: ‘warn’ or ‘ignore’ in the remote repository to allow deleting the
+remote: error: current branch, with or without a warning message.
+remote: error:
+remote: error: To squelch this message, you can set it to ‘refuse’.
+remote: error: refusing to delete the current branch: refs/heads/foobar
+To cisvr:~/reis.git
+! [remote rejected] foobar (deletion of the current branch prohibited)
+error: failed to push some refs to ‘cisvr:~/reis.git’
+
+也就是foobar是远程仓库的当前分支(由于使用git clone --bare生成裸仓库造成的),因为远程仓库是裸仓库,所以不能使用普通的git checkout命令切换分支。在裸仓库中使用如下命令来切换当前分支:
+
+$ git symbolic-ref HEAD refs/heads/devel
+这样就将裸仓库的当前分支切换为devel分支,删除foobar分支就没问题了。
+
+$ git push origin :foobar
+这个命令实质上是修改了.git/HEAD文件,使其内容为:
+
+ref: refs/heads/devel
+
+
+Here is how I rename a tag old to new:
+git tag new old
+git tag -d old
+git push origin :refs/tags/old
+git push --tags
+
+
+为了能把标签同步到远程服务器，我们可以这样做：
+
+默认情况下，git push并不会把tag标签传送到远端服务器上，只有通过显式命令才能分享标签到远端仓库。
+1.push单个tag，命令格式为：git push origin [tagname]
+例如：
+git push origin v1.0 #将本地v1.0的tag推送到远端服务器
+2.push所有tag，命令格式为：git push [origin] --tags
+例如：
+git push --tags 或 git push origin --tags
+
+
+origin/HEAD represents the default branch on the remote, i.e. the HEAD that's in that remote repository you're calling origin. When you switch branches in your repo, you're not affecting that. The same is true for remote branches; you might have master and origin/master in your repo, where origin/master represents a local copy of the master branch in the remote repository.
+origin's HEAD will only change if you or someone else actually changes it in the remote repository, which should basically never happen - you want the default branch a public repo to stay constant, on the stable branch (probably master). origin/HEAD is a local ref representing a local copy of the HEAD in the remote repository. (Its full name is refs/remotes/origin/HEAD.)
+
+What is the difference between origin and upstream in github
+http://stackoverflow.com/questions/9257533/what-is-the-difference-between-origin-and-upstream-in-github
+
+
+回退某个文件见到指定版本
+git reset a4e215234aa4927c85693dca7b68e9976948a35e MainActivity.java
+提交到本地
+git commit -m "revert old file because yjl commmit have a bug"
+更新到工作目录
+git checkout MainActivity.java
+提交到远程仓库
+git push origin master
+
