@@ -1,0 +1,257 @@
+===============================================================================
+floodlightdefault.properties 记录的是系统运行时需要加载的模块(名),当前配置
+
+META-INF/services/net.floodlightcontroller.core.module.IFloodlightModule
+记录的是所有实现了IFloodlightModule接口的类
+
+加载的目的是把floodlightdefault.properties中的模块全部加载好，这些模块以及它们
+所依赖的模块在 META-INF/services/net.floodlightcontroller.core.module.IFloodlightModule
+中去找，如果没有找到，或者两个模块有相同的service则失败
+
+
+===============================================================================
+Static Flow Pusher
+该模块能让用户手动修改每个交换机上的流表项，从而创建任意转发路径
+noc方案其实没有使用该模块(加载了，但是没有使用它提供的service)
+
+
+===============================================================================
+Forwarding
+默认情况下forwarding模块被加载，控制器进行reactive的流下发，即被动下发
+noc方案没有加载该模块
+Linkdiscovery, Topology, DeviceManager, Virtualnetwork, Forwarding,
+Forwarding 使用了 Topology, DeviceManager 提供的 service
+Topology, 使用 Linkdiscovery 提供的 service
+
+目前来看noc方案没有使用这些service，有待验证
+
+
+
+===============================================================================
+启动
+Main函数，然后启动REST服务器，接收RESTful API调用。最后从moduleContext获取
+IFloodlightProviderService的实现类，
+实际上controller类（core/internal/Controller.java）实现了该接口,
+最后调用run函数启动controller。
+
+
+===============================================================================
+FloodlightProvider
+描述：  FloodlightProvider提供了两个主要部分的功能，它处理交换机之间的连接并且
+将OpenFlow的消息转化成其他模块可以监听的事件。第二个主要的功能，它决定某些特定
+的OpenFlow消息（即PacketIn，FlowRemoved，PortStatus等）被分派到该侦听消息的模块
+的顺序。然后模块可以决定允许该消息进入下一个监听对象或停止处理消息。
+提供的服务： IFloodlightProviderService   
+服务依赖性： IStorageSourceService
+             IPktinProcessingTimeService 
+             IRestApiService 
+             ICounterStoreService 
+             IThreadPoolService  
+
+Java实现位置:  net.floodlightcontroller.core.FloodlightProvider.
+如何工作：  FloodlightProvider使用Netty库来处理到交换机的线程和连接，每个
+OpenFlow消息将通过一个Netty的线程进行处理，并执行与所有模块的消息相关联的所有
+逻辑。其他模块也可以注册类似交换机连接或断开和端口状态通知特定事件。
+FloodlightProvider将把这些线协议通知转换成基于Java的消息，以便其它模块可以
+处理。为了使模块注册为基于OpenFlow消息的，他们必须实现IOFMessageListener接口。
+
+
+===============================================================================
+获取and处理ofmessage
+在Floodlight内部IFloodlightProviderService类中定义了一个名为bcStore的对象来存储
+OpenFlow消息所传递上来的消息，其中存储的数据为一个Ethernet对象，其payload域携带
+着该报文的三层信息，而payload域对象自身的payload域又携带着该报文的四层信息。
+
+要在Floodlight内部获取到OpenFlow消息的步骤如下：
+
+1.新建一个类，使其实现IOFMessageListener, IFloodlightModule接口
+2.在getModuleDependencies()方法中声明模块的依赖关系
+3.在init()方法中初始化一个IFloodlightProviderService对象
+4.在startUp()方法中为上一步中初始化好的对象添加OF消息监听器，并指明要监听的消息
+  类型，如OFType.PACKET_IN
+5.在receive方法中，用IFloodlightProviderService.bcStore.get(cntx
+  , IFloodlightProviderService.CONTEXT_PI_PAYLOAD);为一个Ethernet对象赋值。
+  此方法的功能为从Floodlight控制器上下文对象中取出bcStore所携带的数据。此方法中
+  CONTEXT_PI_PAYLOAD被预定以为一个静态字符串常量
+  “net.floodlightcontroller.core.IFloodlightProvider.piPayload”。
+
+
+
+
+
+
+
+vrouter版本
+===============================================================================
+
+config数据走向:
+
+ui-----------------------> (firewall, slb) ----------------------------------
+                                |                                           |
+                                |                                           |
+                                |                                           |
+                                |                                           |
+                                v                                           |
+ui-------->nocconfig-------> nocstorage ------------>(vroute)               |
+                                ^                        |                  |
+                                |                        |                  |
+                                |                        |                  |
+                                |                        |                  |
+                                |                        v                  |
+                                ------------------ configServer <------------
+                                                    ^       |
+                                                    |       |
+                                                    |       |
+                                                    |       |
+                                                    |       v
+                                                   service-node
+
+
+-------------------------------------------------------------------------------
+nocconfig
+具体的配置内容
+    vroute/Vinf
+    vroute/VNat
+    vroute/VRouter
+    external_network
+    network
+    vpc
+
+    firewall的配置是放在firewall模块里面单独实现的，可能这个框架不能满足firewall
+    的配置需求吧
+
+resoure link
+parent
+relate
+child
+self
+
+监听来自UI(通过restapi)的配置, 将配置发送给nocstorage: db.xxxx()
+
+来自service-node的配置变化也会通过这里的接口写入nocstorage
+
+
+-------------------------------------------------------------------------------
+nocstorage
+监听来自nocconfig的配置变化请求
+存储配置变化到mogodb
+通过自己的listener（vrouter, firewall, slb）来通知configServer
+
+
+-------------------------------------------------------------------------------
+configServer
+得到（vrouter, firewall, slb）的通知，下发给service-node
+
+监听service-node请求:
+    get_request
+    notify_changed
+    notify_added
+    notify_removed
+    handshake_cancle
+    handshake_add
+
+通过的IConfigSource的接口get读取配置，然后下发
+接受sevice-node的notify,调用IConfigSource的接口put, 通知需要知道的模块(
+service-node自己？，其他servie-node？vrouter的get实现是null，firewall不null，
+甚至还向storage插入了数据)
+
+vrouter, firewall, slb 会继承IConfigSource， 来实现get, put, close, 供
+configServer调用，当然这三个某块也需要注册它们实现了哪些configSource
+
+
+-------------------------------------------------------------------------------
+vrouter
+实现IConfigSource接口get, put, close, 像configServer注册实现的configSource类型
+
+----IOFSwitchListener
+        addedSwitch
+            添加默认flow
+
+----IPortListener
+        portAdded
+            如果是物理port，且此时没有master，则通知所有node，该port所在node将
+            变为master
+        portRemoved
+            如果是物理port，且该port原来所在的node为master，则重新选举master，
+            通知所有node
+
+----IConfigSource
+        get
+            configServer在收到service-node的config请求时会调用该函数,利用nocconfig
+            从storage中读出所有config data返回给configServer
+        close
+            当service-node和configServer通信出问题时,认为这个service-node是不可信
+            的，将其移除, 如果它是master，则重新选举，通知所有node
+        put
+
+
+----INocStorageListener
+        documentCreated
+            按需从storage中load出created的配置db.getNetwork...；通过configServer
+            下发给servie-node, configServer.notify...
+            同时，如果需要，调用其他模块进行处理，如filterService.allVpcVlan
+            filterService.denyVpcVlan等
+
+        documentChanged
+            同documentCreated
+
+        documentDeleted
+            同documentCreated
+
+
+-------------------------------------------------------------------------------
+firewall
+
+ACL_template: [acl]
+
+URL_template: [url]
+
+Category:
+
+    CategoryItem:
+        categoryid
+        parentid
+        name
+        action
+        time
+        is_leaf_category
+
+    categories: category_str, 包含了CategoryItem?
+    _id       : __UrlCategoryKey__
+
+    category_magic
+
+
+
+policy
+    project_id
+    policy_id
+    policy_name
+    description
+
+    vpc_id
+
+    ingress_acl  :[acl]
+    egress_acl   :[acl]
+    black_list   :[URLItem]
+    white_list   :[URLItem]
+    category_list:[CategoryItem]
+
+    enable_policy       :bool
+    enable_ingress      :bool
+    enable_egress       :bool
+    enable_whilelist    :bool
+    enable_blacklist    :bool
+    enable_category     :bool
+
+    log_category        :bool
+    log_blacklist       :bool
+    log_whilelist       :bool
+
+    checkblack_first    :bool
+
+
+-------------------------------------------------------------------------------
+slb
+
+
