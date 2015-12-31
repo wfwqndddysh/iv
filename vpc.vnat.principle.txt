@@ -65,3 +65,114 @@ actions=encap:(00:25:94:90:62:f6:05, 0.0.0.0, 0.0.0.0, 1)output:1
 这里master的地址是如何知道的？floodlight下发下来的。
 那么floodlight如何得知这个master的mac地址?是从master到floodlight的portstatus消息中读取出来的
 
+
+
+
+
+事件驱动,事件:
+    signal              //signal
+    unixctl_server      //log, use ovs-appctl set vlog level at runtime
+    ovs_client          //flows removed notify and do flows
+    pkt                 //tap_vrouter pkt
+    cfg_client          //floodlght config
+
+
+    ..._init
+
+    while()
+    {
+        ..._run         //处理事件 Demultiplexing
+
+        ..._wait        //注册需要监视的事件，fd，timer，signal三类
+
+        poll_block      //监视，阻塞，直到有一个事件发生 Multiplexing
+    }
+
+
+数据:
+
+vrts--hmap //vpc_id as key
+
+vrouter: //每个vpc一个vrouter
+    node
+    vpc_id
+    vinfs--hmap:
+    vnats--hmap:
+    fwd_reqs--hmap:
+
+vinf:
+    uuid
+    node
+    arp_table
+    vpc_id
+    ip
+    mask
+    vlan_id
+
+vnat:
+    node in vrouter
+    node in vnat_out_map
+    uuid
+    vpc_id
+    override // is pat
+    out_ip
+    ip_start
+    ip_wild_mask
+    out_vlan_id
+    arp_table // of external network
+    gateway   // of external network
+    netmask   // of external network
+    vnat_mgr  // mgr
+
+vrt_fwd_req
+    node
+    src_ip
+    dst_ip
+    src_port
+    dst_port
+
+vnat_out_map: out_ip to vnat
+    hmap
+
+
+
+vnat_mgr:
+    override
+    proto_mgrs--list
+
+vnat_proto_mgr:
+    instes_in--hmap
+    instes_out--hmap
+    list--list // list node in proto_mgrs
+    pool // port pool
+    proto
+
+vnat_inst
+    node_out
+    node_in
+    src_ip
+    out_ip
+    dst_ip
+    src_port
+    out_port
+    dst_port
+    proto
+
+
+arp_table:
+    vpc_id
+    subnet
+    netmask
+    table--hmap
+    waiting_entries--list
+    size
+    last_run
+
+arp_entry:
+    node // in vinf arp_table
+    list--list // node in waiting_entries list of vinf arp
+    ip
+    mac
+    status
+    timestamp
+

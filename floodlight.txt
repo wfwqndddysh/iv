@@ -77,6 +77,39 @@ OpenFlow消息所传递上来的消息，其中存储的数据为一个Ethernet�
 
 
 
+old version flow table
+
+0:filter
+1:mac learning
+2:firewall
+3:mac router
+4:firewall
+5:output
+
+new version flow table
+
+0:stats+ingress, static
+    stat: inport + proto
+    one flow for echo interface
+1:filter, static
+    port status + pkt-in
+2:mac learning, static + dynamic
+    mac flow table
+3:nat
+    pair table with forward table
+4:firewall
+
+5:slb
+
+6:router
+
+7:forward, Pair table with table 2
+
+8:stats + egress
+
+9:output
+
+
 
 
 
