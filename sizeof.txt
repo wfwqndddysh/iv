@@ -218,6 +218,27 @@ int main()
 }
 8 12 16
 
+
+padding and memcmp
+When a value is stored in an object of structure or union type, including in a 
+member object, the bytes of the object representation that correspond to any 
+padding bytes take unspecified values.
+Therefore memcmp() may not work when determine if two structure instances are 
+the same. You probably have to compare member by member. But I would question 
+in first place why do we need to do such comparison and if there is a better 
+data structure for the purpose of comparison
+
+
+sizeof("abcd") is 5
+
+Flexible array members
+struct header
+{
+    int len;
+    unsigned char data[];
+}
+
+
 http://www.geeksforgeeks.org/structure-member-alignment-padding-and-data-packing/
 http://www.catb.org/esr/structure-packing/
 
