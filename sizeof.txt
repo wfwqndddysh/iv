@@ -1,0 +1,256 @@
+c++:
+
+empty class return 1
+
+unavailable used to function type, incomplete types, or bit-field glvalues.
+
+When applied to a class type, the result is the size of an object of that class
+plus any additional padding required to place such object in an array.
+
+When applied to an expression that designates a polymorphic object, the result
+is the size of the static type of the expression.
+
+c:
+
+sizeof cannot be used with function types, incomplete types (including void),
+or bit field lvalues
+
+When applied to an operand that has structure or union type, the result is the 
+total number of bytes in such an object, including internal and trailing 
+padding. The trailing padding is such that if the object were an element of an 
+array, the alignment requirement of the next element of this array would be 
+satisfied, in other words, sizeof(T) returns the size of an element of a T[] 
+array.
+
+#define my_sizeof(object) (char*)(&object+1)-(char*)(&object)
+只能用于变量而不能用于类型
+
+
+Aligning data elements allows the processor to fetch data from memory in an 
+efficient way and thereby improves performance.
+
+By definition, Alignment refers to the location of data in memory; means which 
+address data should be stored at. A variable is naturally aligned if it gets 
+stored at a memory address that is a multiple of its size. For example, a 
+32-bit long variable is naturally aligned if it is located in memory at an 
+address that is a multiple of four. Alignment in C is defined as a "requirement 
+that data of a particular type be located on storage boundaries with addresses 
+that are particular multiples of a byte address".
+
+Structure Alignment and Padding
+Now that we know a variable stored in memory should be stored at the address
+divisible by its size;
+
+typedef struct
+{
+    char a;
+    double b;
+    int c;
+}structc_t;
+
+sizeof(structc_t)==24;
+成员本身的对齐要求占要20字节，但是结构体本身也要求对齐，这是为了满足数组中存放
+structc_t的要求
+如果==20，那么在 structc_t array[3];中将无法对齐第二个元素
+
+这里有一个概念，那就是每一个结构体本身也需要对齐，就是结构体中最大的成员，在这个
+例子中也就是8, 这个概念在嵌套结构体定义中也是一样的，以最大成员对齐要求作为该
+结构体的对齐要求
+
+structrue packing, 有时我们可以使用一些编译器扩展关掉默认的padding，比如JPEG，
+BMP，ELF等的文件头
+
+A note on malloc() returned pointer:
+The pointer returned by malloc() is void *. It can be converted to any data 
+type as per the need of programmer. The implementer of malloc() should return 
+a pointer that is aligned to maximum size of primitive data types (those 
+defined by compiler). It is usually aligned to 8 byte boundary on 32 bit 
+machines.
+
+1. Is alignment applied for stack?
+Yes. The stack is also memory. The system programmer should load the stack 
+pointer with a memory address that is properly aligned. Generally, the 
+processor won’t check stack alignment, it is the programmer’s responsibility 
+to ensure proper alignment of stack memory. Any misalignment will cause run 
+time surprises.
+For example, if the processor word length is 32 bit, stack pointer also should 
+be aligned to be multiple of 4 bytes.
+
+2. If char data is placed in a bank other bank 0, it will be placed on wrong 
+data lines during memory read. How the processor handles char type?
+
+3. When arguments passed on stack, are they subjected to alignment?
+Yes. The compiler helps programmer in making proper alignment. For example, if 
+a 16-bit value is pushed onto a 32-bit wide stack, the value is automatically 
+padded with zeros out to 32 bits. Consider the following program.
+void argument_alignment_check( char c1, char c2 )
+{
+    // Considering downward stack
+    // (on upward stack the output will be negative)
+    printf("Displacement %d\n", (int)&c2 - (int)&c1);
+}
+The output will be 4 on a 32 bit machine. It is because each character occupies
+4 bytes due to alignment requirements.
+
+4. What will happen if we try to access a misaligned data?
+
+5. Is there any way to query alignment requirements of a data type.
+Yes. Compilers provide non standard extensions for such needs. For example, 
+__alignof() in Visual Studio helps in getting the alignment requirements of 
+data type.
+
+6. When memory reading is efficient in reading 4 bytes at a time on 32 bit 
+machine, why should a double type be aligned on 8 byte boundary?
+
+
+struct foo5 {
+    char c;
+    struct foo5_inner {
+        char *p;
+        short x;
+    } inner;
+};
+
+The char *p member in the inner struct forces the outer struct to be 
+pointer-aligned as well as the inner. Actual layout will be like this on a 
+64-bit machine:
+
+struct foo5 {
+    char c;           /* 1 byte*/
+    char pad1[7];     /* 7 bytes */
+    struct foo5_inner {
+        char *p;      /* 8 bytes */
+        short x;      /* 2 bytes */
+        char pad2[6]; /* 6 bytes */
+    } inner;
+};
+
+The thing to know about bitfields is that they are implemented with word- and 
+byte-level mask and rotate instructions operating on machine words, and cannot 
+cross word boundaries.
+struct foo6 {
+    short s;
+    char c;
+    int flip:1;
+    int nybble:4;
+    int septet:7;
+};
+
+Assuming we’re on a 32-bit machine, that implies that the layout may look like 
+this:
+
+struct foo6 {
+    short s;       /* 2 bytes */
+    char c;        /* 1 byte */
+    int flip:1;    /* total 1 bit */
+    int nybble:4;  /* total 5 bits */
+    int pad1:3;    /* pad to an 8-bit boundary */
+    int septet:7;  /* 7 bits */
+    int pad2:25;   /* pad to 32 bits */
+};
+But this isn’t the only possibility, because the C standard does not specify 
+that bits are allocated low-to-high. So the layout could look like this:
+
+struct foo6 {
+    short s;       /* 2 bytes */
+    char c;        /* 1 byte */
+    int pad1:3;    /* pad to an 8-bit boundary */
+    int flip:1;    /* total 1 bit */
+    int nybble:4;  /* total 5 bits */
+    int pad2:25;   /* pad to 32 bits */
+    int septet:7;  /* 7 bits */
+};
+
+That is, the padding could precede rather than following the payload bits.
+
+struct foo7 {
+    int bigfield:31;      /* 32-bit word 1 begins */
+    int littlefield:1;
+};
+
+struct foo8 {
+    int bigfield1:31;     /* 32-bit word 1 begins /*
+    int littlefield1:1;
+    int bigfield2:31;     /* 32-bit word 2 begins */
+    int littlefield2:1;
+};
+
+struct foo9 {
+    int bigfield1:31;     /* 32-bit word 1 begins */
+    int bigfield2:31;     /* 32-bit word 2 begins */
+    int littlefield1:1;
+    int littlefield2:1;   /* 32-bit word 3 begins */
+};
+
+On the other hand, struct foo8 would fit into a single 64-bit word if the 
+machine has those.
+
+
+typedef union _NESTEDU
+{
+    long    l;
+    int f;
+} NESTEDU;
+
+typedef struct _NOTHING
+{
+    int a;
+    int b;
+    int c;
+} NOTHING;
+
+typedef union _UNION
+{
+    int i;
+    char    c;
+    NESTEDU n;
+    NOTHING k;
+} UNION;
+
+int main()
+{
+    printf("struct/union sizeof testing\n");
+    printf("sizeof() NESTEDU = %lu\n", sizeof(NESTEDU));
+    printf("sizeof() NOTHING = %lu\n", sizeof(NOTHING));
+    printf("sizeof() UNION = %lu\n", sizeof(UNION));
+
+    return(0);
+}
+8 12 16
+
+
+padding and memcmp
+When a value is stored in an object of structure or union type, including in a 
+member object, the bytes of the object representation that correspond to any 
+padding bytes take unspecified values.
+Therefore memcmp() may not work when determine if two structure instances are 
+the same. You probably have to compare member by member. But I would question 
+in first place why do we need to do such comparison and if there is a better 
+data structure for the purpose of comparison
+
+
+sizeof("abcd") is 5
+
+Flexible array members
+struct header
+{
+    int len;
+    unsigned char data[];
+}
+
+union 用来强制对齐
+typedef long Align; /* for alignment to long boundary */
+union header { /* block header */165
+    struct {
+        union header *ptr; /* next block if on free list */
+        unsigned size;
+        /* size of this block */
+    } s;
+    Align x;
+};
+/* force alignment of blocks */
+typedef union header Header;
+
+http://www.geeksforgeeks.org/structure-member-alignment-padding-and-data-packing/
+http://www.catb.org/esr/structure-packing/
+
