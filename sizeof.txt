@@ -251,6 +251,8 @@ union header { /* block header */165
 /* force alignment of blocks */
 typedef union header Header;
 
+sizeof('F')==sizeof(int)==4
+
 http://www.geeksforgeeks.org/structure-member-alignment-padding-and-data-packing/
 http://www.catb.org/esr/structure-packing/
 
