@@ -293,11 +293,28 @@ struct H : virtual C
     int h1;
     void hf();
 };
-struct I : G, H
+struct I : virtual C
 {
     int i1;
     void _if();
-}; 
+};
+
+struct J1 : G
+{
+    int j1;
+    void _j1f();
+};
+struct J2 : G
+{
+    int j2;
+    void _j2f();
+};
+struct J3 : G
+{
+    int j3;
+    void _j3f();
+};
+
 
 class O1
 {
@@ -409,7 +426,9 @@ int main()
 
     std::cout<<sizeof(G)<<std::endl;
     std::cout<<sizeof(H)<<std::endl;
-    std::cout<<sizeof(I)<<std::endl;
+    std::cout<<sizeof(J1)<<std::endl;
+    std::cout<<sizeof(J2)<<std::endl;
+    std::cout<<sizeof(J3)<<std::endl;
 
     std::cout<<sizeof(O5)<<std::endl;
     std::cout<<sizeof(O10)<<std::endl;
@@ -426,7 +445,9 @@ int main()
 12
 16
 16
+24
 40
+56
 32
 8
 1
