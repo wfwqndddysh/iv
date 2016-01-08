@@ -273,3 +273,74 @@ void f(int a[3])
 
 
 c中的可变长参数问题
+
+
+int i = 3;
+int l = i / -2;
+int k = i % -2;
+printf("%d %d\n", l, k); //-1, 1
+
+浮点数相等不想测试不能用 == 和 != , unsafe
+
+How to free a block of memory previously allocated without using free?
+If the pointer holding that memory address is passed to realloc with size 
+argument as zero (like realloc(ptr, 0)) the the memory will be released.
+
+int x = 5.3 % 2; 编译失败
+
+void change()
+{
+// Add a statement here such that printf in main prints 5
+}
+int main()
+{
+    int i;
+    i=5;
+    change();
+    i=10;
+    printf("%d",i); /* this should print 5*/
+}
+#define printf(x, y) printf("5");
+
+
+int x = 5 % (-3);
+int y = (-5) % (3);
+int z = (-5) % (-3); 
+printf("%d ,%d ,%d", x, y, z); //2 -2 -2
+C99 requires that when a/b is representable:
+(a/b) * b + a%b == a
+
+Example A. 5/(-3) is -1
+=> (-1) * (-3) + 5%(-3) = 5
+=> 5%(-3) should be 2
+
+Example B. (-5)/3 is -1
+=> (-1) * 3 + (-5)%3 = -5
+=> (-5)%3 should be -2
+...
+
+int remainder(int a, int b)
+{
+    return a - (a / b) * b;
+}
+For modulo operation, we can have the following function:
+int mod(int a, int b)
+{
+    int r = a % b;
+    return r < 0 ? r + b : r;
+}
+My conclusion is (a % b) in C is a remainder operator and NOT modulo operator.
+
+
+When does the compiler not implicitly generate the address of the first
+element of an array?
+Whenever an array name appears in an expression such as
+- array as an operand of the sizeof operator
+- array as an operand of & operator
+- array as a string literal initializer for a character array
+Then the compiler does not implicitly generate the address of the
+address of the first element of an array
+
+
+不能对void*dereference, 编译错误
+

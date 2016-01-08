@@ -460,3 +460,28 @@ char i=3;
 sizeof(++i+ ++i)==sizeof(i+i)==sizeof(i)==sizeof(1)==4
 sizeof(i)==sizeof(i++)==sizeof(++i)==sizeof(char)==1
 
+
+sizeof的返回类型是 unsigned long
+if(sizeof(int)>-1)
+    printf("true\n");
+else
+    printf("false\n");
+输出是 false
+
+
+
+struct A
+{
+    unsigned char c1 : 3;
+    unsigned char : 0;
+    unsigned char c2 : 4;
+    unsigned char c3 : 1;
+};
+sizeof(struct A)==2
+{
+    unsigned char c1 : 3;
+    unsigned char c2 : 4;
+    unsigned char c3 : 1;
+};
+sizeof(struct A)==1
+
