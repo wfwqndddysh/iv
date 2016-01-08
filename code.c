@@ -221,3 +221,55 @@ float 与 0 的比较
 #define EPSINON 0.00001
 if(x>-EPSINON && x<-EPSINON)
 
+
+int foo(int x, int n)
+{
+    int val=1;
+    if(n>0)
+    {
+        if(n%2==1) val=val*x;
+        val = val*foo(x*x, n/2);
+    }
+    return val;
+}
+该函数的功能是 x^n
+
+
+void foo(int b[][3])
+{
+    b[1][1]=9;
+}
+int a[][3]= { {1, 2, 3}, {4, 5, 6}, {7, 8, 9} };
+foo(a);
+printf("%d\n", a[2][1]); //9
+
+
+int a, b, c, d;
+a=3;
+b=5;
+c=a,b;
+d=(a,b);
+printf("%d, %d\n"); //3, 5 (逗号的优先级最低)
+
+
+int a[][3]={ {1, 2, 3}, {4, 5, 6} };
+int (*ptr)[3] = a;
+printf("%d %d\n", (*ptr)[1], (*ptr)[2]); //2, 3
+++ptr;
+printf("%d %d\n", (*ptr)[1], (*ptr)[2]); //5, 6
+
+
+
+void f(int a[][3])
+{
+    sizeof(a)==8;
+    type of a is int (*)[3];
+}
+void f(int a[3])
+{
+    sizeof(a)==8;
+    type of a is int*;
+}
+
+
+c中的可变长参数问题

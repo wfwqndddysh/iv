@@ -251,7 +251,8 @@ union header { /* block header */165
 /* force alignment of blocks */
 typedef union header Header;
 
-sizeof('F')==sizeof(int)==4
+在c中sizeof('F')==sizeof(int)==4
+在c++中sizeof('F')==sizeof(char)==1
 
 http://www.geeksforgeeks.org/structure-member-alignment-padding-and-data-packing/
 http://www.catb.org/esr/structure-packing/
@@ -453,4 +454,9 @@ int main()
 1
 1
 
+
+sizeof是个操作符，所以一般来说不求它的参数表达式的值
+char i=3;
+sizeof(++i+ ++i)==sizeof(i+i)==sizeof(i)==sizeof(1)==4
+sizeof(i)==sizeof(i++)==sizeof(++i)==sizeof(char)==1
 
