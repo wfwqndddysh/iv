@@ -256,3 +256,180 @@ sizeof('F')==sizeof(int)==4
 http://www.geeksforgeeks.org/structure-member-alignment-padding-and-data-packing/
 http://www.catb.org/esr/structure-packing/
 
+#include<iostream>
+
+class Empty
+{
+};
+
+struct C
+{
+    int c1;
+    void cf();
+};
+struct D : C
+{
+    int d1;
+    void df();
+};
+struct E
+{
+    int e1;
+    void ef();
+};
+struct F : C, E
+{
+    int f1;
+    void ff();
+};
+
+struct G : virtual C
+{
+    int g1;
+    void gf();
+};
+struct H : virtual C
+{
+    int h1;
+    void hf();
+};
+struct I : G, H
+{
+    int i1;
+    void _if();
+}; 
+
+class O1
+{
+public:
+    virtual void f1();
+};
+class O2
+{
+public:
+    virtual void f1();
+};
+class O3
+{
+public:
+    virtual void f1();
+};
+class O4
+{
+public:
+    virtual void f1();
+};
+class O5 : public O1, public O2, public O3, public O4
+{
+    void virtual f1();
+};
+
+class O6
+{
+public:
+    virtual void f1();
+};
+class O7 : public O6
+{
+public:
+    virtual void f1();
+};
+class O8 : public O7
+{
+public:
+    virtual void f1();
+    virtual void f2();
+};
+class O9 : public O8
+{
+public:
+    virtual void f1();
+};
+class O10 : public O9
+{
+    void virtual f1();
+};
+
+class I1
+{
+public:
+    void f1();
+};
+class I2
+{
+public:
+    void f2();
+};
+class I3
+{
+public:
+    void f3();
+};
+class I4
+{
+public:
+    void f4();
+};
+class I5 : public I1, public I2, public I3, public I4
+{
+    void f5();
+};
+
+class I6
+{
+public:
+    void f1();
+};
+class I7 : public I6
+{
+public:
+    void f2();
+};
+class I8 : public I7
+{
+public:
+    void f3();
+};
+class I9 : public I8
+{
+public:
+    void f4();
+};
+class I10 : public I9
+{
+    void f5();
+};
+
+int main()
+{
+    std::cout<<sizeof(Empty)<<std::endl;
+    std::cout<<sizeof(C)<<std::endl;
+    std::cout<<sizeof(D)<<std::endl;
+    std::cout<<sizeof(F)<<std::endl;
+
+    std::cout<<sizeof(G)<<std::endl;
+    std::cout<<sizeof(H)<<std::endl;
+    std::cout<<sizeof(I)<<std::endl;
+
+    std::cout<<sizeof(O5)<<std::endl;
+    std::cout<<sizeof(O10)<<std::endl;
+
+    std::cout<<sizeof(I5)<<std::endl;
+    std::cout<<sizeof(I10)<<std::endl;
+
+    return 0;
+}
+
+1
+4
+8
+12
+16
+16
+40
+32
+8
+1
+1
+
+
