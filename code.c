@@ -344,3 +344,61 @@ address of the first element of an array
 
 不能对void*dereference, 编译错误
 
+
+int i = 10;
+void *p = &i;
+printf("%f\n", *(float*)p); //输出和浮点数的表示有关，但期望输出为10.0是不对的
+
+
+int *ptr, p; //ptr是指针，p是int
+
+
+float x = 0.1;
+printf("%d, ", x); //垃圾值
+printf("%d, ", (int)x); //0
+printf("%f\n", x); //0.000001
+
+double x = 123828749.66;
+int y = x;
+printf("%d\n", y); //123828749
+printf("%lf\n", y); //垃圾值
+
+float x;
+int y;
+printf("enter two numbers \n", x);
+scanf("%f %f", &x, &y);
+printf("%f, %d", x, y); //7.000000 垃圾值
+
+Narrowing conversions and widening conversions
+
+
+
+typedef int(*ptr)(int); //定以一个类型别名
+int (*ptr)(int); //定一个变量,可以赋值，取地址
+
+int (*foo(int))(int); //声明
+foo是一个函数，这个函数接收一个int参数，返回一个指针，这个指针指向一个参数为int
+返回值为int的函数
+int ((*foo(int i)))(int) //定义
+{
+    return myfoo;
+}
+
+int (*(*pf())())()
+{
+    return nullptr; 
+}
+
+a()    a是一个函数
+*a     a是一个指针
+由于函数声明的特殊性，当指针解引用操作符*与一个表示函数的标识符结合时，
+表示这个函数的返回值是一个指针。例如 *a() 表示a是一个返回值为指针的函数。
+
+            pf()            pf是一个无参数函数
+          * pf()            pf是一个无参数函数，它的返回值是一个指针
+      * ( * pf() ) ()       pf是一个无参数函数，它的返回值是一个无参数函数的指针
+    * * ( * pf() ) ()       pf是一个无参数函数，它的返回值是一个无参数函数的指针，这个函数的返回值又是一个指针
+  * ( * ( * pf() ) () ) ()  pf是一个无参数函数，它的返回值是一个无参数函数的指针，这个函数的返回值又是一个无参数函数的指针
+int ( * ( * pf() ) () ) ()  pf是一个无参数函数，它的返回值是一个无参数函数的指针，这个函数的返回值又是一个无参数且返回值为int的函数的指针。
+
+

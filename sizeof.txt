@@ -485,3 +485,12 @@ sizeof(struct A)==2
 };
 sizeof(struct A)==1
 
+
+short int i = 20;
+char c = 97;
+printf("%d\n", sizeof(c + i)); //4
+
+
+sizeof(function)==1
+sizeof(function ptr)==8
+
