@@ -441,3 +441,67 @@ int i = 10;
 int *const p = &i;
 foo(&p); //编译能过，p确实被改过了, 但在foo里直接修改p是编译不过的
 
+
+char *s= "hello";
+char *p = s;
+printf("%c, %c", 1[p], s[1]); //e, e
+
+
+int a = 10;
+int **c = &&a; //编译失败
+
+
+int f(int a[][]) {}; //编译失败：array type has incomplete element type
+int f(int a[5[]) {}; //编译失败：array type has incomplete element type
+
+int *a1[8];
+int *(a3[8]);
+都是 Array of pointers
+
+
+
+void foo(int *ary[])
+{
+    int i = 10, j = 2, k;
+    ary[0] = &i;
+    ary[1] = &j;
+    *ary[0] = 2;
+    for (k = 0;k < 2; k++)
+        printf("%d\n", *ary[k]);
+}
+int ary[2][3];
+foo(ary); //编译警告，重要的是警告在foo(ary)行上，输出为：2 2
+
+void foo(int (*ary)[3])
+{
+    int i = 10, j = 2, k;
+    ary[0] = &i;
+    ary[1] = &j;
+    for (k = 0;k < 2; k++)
+        printf("%d\n", *ary[k]);
+}
+int ary[2][3];
+foo(ary); //编译失败, 和上一例比较
+
+
+int j=20;
+int a[2];
+int b[2][2];
+int c[2][2][2];
+a = &j;         //编译失败, 数组类型不能赋值
+b[0] = &j;      //编译失败, 数组类型不能赋值
+c[0][0] = &j;   //编译失败, 数组类型不能赋值
+
+
+char *a = {"p", "r", "o", "g", "r", "a", "m"};
+printf("%s", a); //编译警告：excess elements in scalar initializer, 输出为p
+
+
+long = 0, j = 2, k=4, o=6, p=8;
+long *a[] = {&p, &o};
+printf("%d", (*a)[0]); //8, *a的类型是int*, 对一维数组来说，*a的类型==a[0]的类型
+printf("%d", (*a)[4]); //0, *a的类型是int*, 栈的地址是下降的
+printf("%d", *a[0]);   //8
+
+
+int a[][] = {{1, 2, 3}, {2, 3, 4, 5}};//编译不过

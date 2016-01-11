@@ -228,8 +228,9 @@ the same. You probably have to compare member by member. But I would question
 in first place why do we need to do such comparison and if there is a better 
 data structure for the purpose of comparison
 
-
-sizeof("abcd") is 5
+char* str = "abcd";
+sizeof(str) == sizeof(char*)
+sizeof("abcd") is 5 == strcpy("abcd")+1
 
 Flexible array members
 struct header
