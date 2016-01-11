@@ -494,4 +494,6 @@ printf("%d\n", sizeof(c + i)); //4
 
 sizeof(function)==1
 sizeof(function ptr)==8
+sizeof(void)==1
+sizeof(function())==sizeof(return type of function)
 

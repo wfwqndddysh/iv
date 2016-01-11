@@ -505,3 +505,30 @@ printf("%d", *a[0]);   //8
 
 
 int a[][] = {{1, 2, 3}, {2, 3, 4, 5}};//编译不过
+
+
+char a[2][6] = {"hello", "hi"};
+printf("%lu\n", sizeof(a)); //12
+printf("%lu\n", sizeof(*a)); //6
+printf("%lu\n", sizeof(**a)); //1
+printf("%p\n", a+1); //同下
+printf("%p\n", *(a+1)); //同上
+printf("%s\n", a+1); //hi
+printf("%s\n", *(a+1)); //hi
+printf("%s\n", *a+1); //ello
+
+
+void (*(f)())(int, float);
+void (*(*x)())(int, float) = f;
+void (*y)(int, float); same to void ((*y)(int, float));
+void foo(int i, float f);
+void (*(f)())(int, float) { return foo; }
+void foo(int i, float f) { printf("%d %f\n", i, f); }
+y = x();
+y(1, 2); //1 2.000000
+
+
+int (*(*y)())[2];
+y is pointer to the function which returns pointer to integer array
+你自己能写出来吗？
+
