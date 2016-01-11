@@ -402,3 +402,42 @@ a()    a是一个函数
 int ( * ( * pf() ) () ) ()  pf是一个无参数函数，它的返回值是一个无参数函数的指针，这个函数的返回值又是一个无参数且返回值为int的函数的指针。
 
 
+funcptr = f; //implicit conversion to pointer
+funcptr = &f; //explicit manufacture of a pointer
+(*funcptr)(2, 3); //explicit dereference of the pointer
+(********funcptr)(2, 3); //和上面是一样的，也就是说编译器会忽略掉funcptr前面的*
+funcptr(2, 3); // implicit dereference of the pointer
+
+
+void f(int, int){}
+void (*foo)() = f;
+foo(10, 10); //OK
+
+void f(int, int){}
+void (*foo)(void) = f;
+foo(10, 10); //compile error, too many args
+在C中如果真的是空参数，应该坚持写为void, 而不是什么也不写, 否则编译器会当作它
+需要可变个数的参数
+
+void f(int i) { printf("%d\n", i); }
+void (*foo)(float) = f;
+foo(10); //未定义的行为
+
+
+void f(int (*i)(int)) { i(11); }
+int foo(int i) { printf("%d\n", i); return i; }
+f(foo(10)); //可以编译，有警告，结果：10 segmentation fault
+整数到指针的隐式转换
+
+C in a nut shell 类型转换一节
+
+void foo(float *p) { printf("%f\n", *p); }
+int i = 10, *p = &i;
+foo(&i); //0.000000
+
+
+void foo(int **p) { int j = 11; *p = &j; }
+int i = 10;
+int *const p = &i;
+foo(&p); //编译能过，p确实被改过了, 但在foo里直接修改p是编译不过的
+

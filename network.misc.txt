@@ -1,0 +1,18 @@
+linux双网卡配置同一subnet
+echo "100    local100" >> /etc/iproute2/rt_tables
+echo "200    local200" >> /etc/iproute2/rt_tables
+
+ip route add 192.168.1.0/24 dev eth0 src 192.168.1.1 table local100
+ip route add 192.168.1.0/24 dev eth2 src 192.168.1.253 table local200
+ip route add default dev eth0 table local100
+ip route add default dev eth2 table local200
+
+ip rule add from 192.168.1.1 table local100
+ip rule add from 192.168.1.253 table local200
+
+ip route flush cache
+
+我的理解是： linux内核 在响应外部ARP请求的时候， 2块网卡 在同一个路由里面，因此
+都有机会去响应arp请求,因此出现了 MAC地址错乱的情况,现在的思路就是把2块网卡分到
+2个不同的路由表中，这样就不出现MAC地址冲突的事情了
+
