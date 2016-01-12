@@ -532,3 +532,91 @@ int (*(*y)())[2];
 y is pointer to the function which returns pointer to integer array
 你自己能写出来吗？
 
+
+struct p
+{
+    int k;
+    char c;
+    float f;
+};
+struct p x = {.c = 97, .f = 3, .k = 1}; //结构体初始化，不需要记住定义时的成员的顺序
+
+struct p x = {.c = 97, .k = 1, 3};
+printf("%f \n", x.f); according to c99, output is 0.000000
+struct p x = {.c = 97};
+printf("%f \n", x.f); according to c99, output is 0.000000
+
+
+不同类型的结构体之间不能赋值
+不能对结构体typecast
+struct temp { int a; };
+struct temp1 { int b; };
+struct temp t;
+struct temp1 t1 = (struct temp)t; //编译失败
+
+struct point { int x; };
+struct point p = {1};
+struct point p1 = {1};
+if(p == p1) printf("equal\n");
+else printf("not equal\n"); //编译失败，
+//invalid operands to binary == (have ‘struct point’ and ‘struct point’)
+
+
+[] () . -> 优先级最高，为1
+*(pointer) &(address) 优先级为2
+容易出错的优先级例子
+*p.f
+int *ap[]
+int *fp()
+val & mask != 0         //== != 高于位操作
+c = getchar() != EOF    //== != 高于赋值
+msb << 4 + lsb          //算术运算符高于>> <<移位运算符，后者高于& | ^位运算符
+i = 1, 2
+
+struct point* p1 = &st;
+printf("%d\n", *p.x++); //编译出错
+
+
+struct student { };
+struct student s[2];
+printf("%lu", sizeof(struct student)); //0
+printf("%d", sizeof(s)); //0
+
+
+struct point { int x; int y; };
+struct point p[] = {1, 2, 3, 4};
+//编译有警告，更合理的是 {{1, 2}, {3, 4}}, 但可以运行，sizeof(p1)==16
+
+
+int i=0;
+printf("%d %d %d\n", i++, i++, i++); // 2 1 0, 注意参数计算顺序
+
+
+struct p
+{
+    int x;
+    char y;
+    struct p *ptr;
+};
+struct p p = {1, 2, &p};
+printf("%d\n", p.ptr->x); //1
+
+
+
+int (*(x()))[2]
+{
+    int (*ary)[3] = malloc(printf("%lu\n", sizeof*ary));
+    return &ary;
+} //编译有警告，但是合法的，输出为 12
+
+
+
+union p
+{
+    int x;
+    float y;
+};
+union p p;
+p.x = 10;
+printf("%f\n", p.y); //0.000000 on gcc 4.9.2
+
