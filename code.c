@@ -620,3 +620,137 @@ union p p;
 p.x = 10;
 printf("%f\n", p.y); //0.000000 on gcc 4.9.2
 
+
+struct p
+{
+    unsigned int x : 2;
+    unsigned int y : 2;
+};
+struct p p;
+p.x = 3;
+p.y = 4;
+printf("%d\n", p.y); //0 large integer implicitly truncated to unsigned type
+
+
+C99 standard guarantees uniqueness of ____ characters for internal names. 63
+C99 standard guarantess uniqueness of ____ characters for external names. 31
+
+
+int main()
+{
+    int main = 3;
+    printf("%d", main);
+    return 0;
+} //3
+
+
+signed char chr;
+chr = 128;
+printf("%d\n", chr); //-128
+
+
+int fgetc(FILE* stream)
+char c;
+FILE *file;
+file = fopen("test.txt", "w+");
+fprintf(file, "%c", 'a');
+fprintf(file, "%c", -1);
+fprintf(file, "%c", 'b');
+fclose(file);
+file = fopen("test.txt", "r");
+while ((c = fgetc(file)) !=  EOF)
+    printf("%c", c);
+//输出为 a， 如果把char c改为 int c，则输出为 a， 乱码， b
+//十六进制查看test.txt的内容为 61 ff 62
+//将第二个字节ff读到char里变为-1(==EOF)， 读到int里是255(!=EOF)
+
+
+
+float f1 = 0.1;
+if (f1 == (float)0.1) printf("equal\n");
+else printf("not equal\n");
+//对float进行==和!=比较是unsafe的
+//但是将0.1转换为float再比较后的输出是equal, 或者double f1=0.1; 则输出也是equal
+
+
+
+enum {ORANGE = 5, MANGO, BANANA = 4, PEACH};
+printf("PEACH = %d\n", PEACH); //5
+
+
+
+char *str = “Sanfoundry.com\0” “training classes”;
+The character pointer str holds reference to string:
+a) Sanfoundry.com
+b) Sanfoundry.com\0training classes
+c) Sanfoundry.comtraining classes
+d) Invalid declaration
+//b
+
+
+enum birds {SPARROW, PEACOCK, PARROT};
+enum animals {TIGER = 8, LION, RABBIT, ZEBRA};
+enum birds m = TIGER;
+int k;
+k = m;
+printf("%d\n", k); //有警告，输出为8
+
+
+printf("sanfoundry\rclass\n"); //classundry
+Explanation:r is carriage return and moves the cursor back. sanfo is replaced by class
+
+
+const int i = 10;
+int *ptr = &i;
+*ptr = 20;
+printf("%d\n", i); //编译警告，输出20
+
+
+int x = 5.3 % 2; //编译失败
+
+
+int a = 3;
+int b = ++a + a++ + --a;
+printf("Value of b is %d", b); //行为未定义，在gcc 4.9.2 输出为 13, + 不是一个 sequence point
+
+
+c/c++中的 sequence point 解释
+https://en.wikipedia.org/wiki/Sequence_point
+int a = 10;
+if (a == a--)
+    printf("TRUE 1\t");
+a = 10;
+if (a == --a)
+    printf("TRUE 2\t");
+//gcc 4.9.2 输出为 2, 先计算右边的表达式
+//clang 输出为 1， 先计算了左边的
+像这样的不是sequence point的例子很多，比如：
++, -, ==, !=,  i=i++, =, 函数参数计算顺序等等
+f(i++) + g(j++) + h(k++); f，g，h那个函数先运行是未定义的
+但是:逗号运算符, && || 是sequence point, 先计算左边的表达式，再计算右边的表达式
+
+
+
+unsigned int i = 23;
+signed char c = -23;
+if (i > c) printf("Yes\n");
+else if (i < c) printf("No\n"); //No
+
+
+int d, a = 1, b = 2;
+d =  a++ + ++b; //可以编译
+d =  a++ +++b; //语法错误
+
+
+int x = 4;
+int *p = &x;
+int *k = p++;
+int r = p - k;
+printf("%d", r); //1
+
+
+unsigned int a = 10;
+a = ~a;
+printf("%d\n", a); //-11
+
+
