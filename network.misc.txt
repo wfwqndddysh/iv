@@ -16,3 +16,17 @@ ip route flush cache
 都有机会去响应arp请求,因此出现了 MAC地址错乱的情况,现在的思路就是把2块网卡分到
 2个不同的路由表中，这样就不出现MAC地址冲突的事情了
 
+
+# 利用netcat进行网络测试
+# nc -l -p 80 < /dev/zero
+And connect to it from another machine using :
+
+# nc 192.168.1.1 80 > /dev/null
+The server process will send zeros (taken from /dev/zero) as fast as it can, 
+and the client will receive them and throw them away, as fast as it can.
+
+linux 流量控制概念
+http://blog.csdn.net/wuruixn/article/details/8210760
+http://www.php-oa.com/2009/06/23/linux_tc.html
+
+
