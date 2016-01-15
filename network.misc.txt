@@ -28,5 +28,10 @@ and the client will receive them and throw them away, as fast as it can.
 linux 流量控制概念
 http://blog.csdn.net/wuruixn/article/details/8210760
 http://www.php-oa.com/2009/06/23/linux_tc.html
+http://wiki.linuxwall.info/doku.php/en:ressources:dossiers:networking:traffic_control#the_basics_of_traffic_control
 
+ovs rate-limiting
+http://openvswitch.org/support/config-cookbooks/qos-rate-limiting/
+https://virtualandy.wordpress.com/2013/04/29/deep-dive-htb-rate-limiting-qos-on-with-open-vswitch-and-xenserver/
+http://dannykim.me/danny/openflow/57774?ckattempt=1
 
