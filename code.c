@@ -725,7 +725,7 @@ if (a == --a)
 //gcc 4.9.2 输出为 2, 先计算右边的表达式
 //clang 输出为 1， 先计算了左边的
 像这样的不是sequence point的例子很多，比如：
-+, -, ==, !=,  i=i++, =, 函数参数计算顺序等等
++, -, ==, !=,  i=i++, =, & 函数参数计算顺序等等
 f(i++) + g(j++) + h(k++); f，g，h那个函数先运行是未定义的
 但是:逗号运算符, && || 是sequence point, 先计算左边的表达式，再计算右边的表达式
 
@@ -752,5 +752,30 @@ printf("%d", r); //1
 unsigned int a = 10;
 a = ~a;
 printf("%d\n", a); //-11
+
+
+在c中左移也就是所说的逻辑移位，右端补0，而右移是算数移位，左端补齐的是最高位的符号位。
+故负数左移，有可能变成正数，但负数右移，肯定还是负数。
+int x = -2;
+x = x >> 1;
+printf("%d\n", x); //-1
+int x = -9;
+x = x << 28;
+printf("%d\n", x); //1879048192
+int x = -9;
+x = x << 27;
+printf("%d\n", x); //-1207959552
+
+(~0 == 1) //false
+(!0 == 1) //true 优先级问题
+
+
+int y = 1;
+if (y & (y = 2)) printf("true %d\n", y);
+else printf("false %d\n", y);
+unsequenced point问题, & 不是一个sequence point, 左边和右边的表达式都有可能首先
+被计算, gcc ture 2, clang fales 2
+
+
 
 
