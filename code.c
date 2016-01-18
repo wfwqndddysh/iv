@@ -778,6 +778,7 @@ unsequenced point问题, & 不是一个sequence point, 左边和右边的表达�
 
 
 int k = 8;
+<<<<<<< Updated upstream
 int m = 7;
 k < m ? k++ : m = k; //编译错误，注意？和=的优先级顺序
 
@@ -824,5 +825,22 @@ if (r = p = 5 || q > 20)
     printf("%d", r);
 else
     printf("No Output\n"); //1, 注意优先级高低
+
+int x = 0 == 1 && k+
+printf("%d%d\n", x, k); //0 8
+
+
+unsigned int x = -5;
+printf("%d", x); //-5
+
+
+int a = 1, b = 2;
+a += b -= a;
+printf("%d %d", a, b); //2 1
+
+
+double f = 3;
+printf("%lu\n", sizeof((x==2) ? f: 0)); //==sizeof(double)==sizeof(f)
+//sizeof在什么情况下求表达式的值?
 
 
