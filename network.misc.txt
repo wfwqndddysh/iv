@@ -35,3 +35,78 @@ http://openvswitch.org/support/config-cookbooks/qos-rate-limiting/
 https://virtualandy.wordpress.com/2013/04/29/deep-dive-htb-rate-limiting-qos-on-with-open-vswitch-and-xenserver/
 http://dannykim.me/danny/openflow/57774?ckattempt=1
 
+libvirt处理tap/guest的mac问题
+http://comments.gmane.org/gmane.comp.emulators.libvirt.user/7848
+> How does the libvirt deal with the vnet mac address?
+> 
+> Greetings,
+> if I establish a network for the VM (hypervisor is KVM) using bridge in
+> the virt-manager , a vnet0 device is created . There are some relationships
+> about mac address between the vnet0 device in the hypervisor and the ethX
+> device in the VM, for example :
+> the mac address of vnet0 is FE:54:00:84:E3:62
+> the mac address of ethX in the VM is 52:54:00:84:E3:62
+> two mac addresses above are almost the same except the first part of the address .
+> but if I created a tap device manually , 
+> tunctl -t tap0 -u root
+> brctl addif br0 tap0
+> and add tap0 to the VM, I will find that mac address between the tap0 device
+> in the hypervisor and the ethX device in the VM will totally different . so
+> I think that libvirt must do something about the mac address handling, could
+> you please kindly tell me something about this ?
+
+When first created, the kernel assigns the tap device a completely random
+MAC address. This bears no relation to the MAC address that is used in the
+guest OS.
+
+When you create a bridge device it initially has a MAC address of all zeros,
+and when you add NIC devices to the bridge, its MAC address gets update to
+the numerically lowest MAC address of all the NICs. The problem is that
+when the kernel assigns MAC addresses randomly, one of these random MAC
+address might be numerically lower than the bridge's current MAC address.
+So the effect is that when you start/stop guests, and their TAP devices
+get added/removed from the bridge, the bridge's own MAC address will
+occassionally change which is a bad thing.
+
+So deal with this, libvirt will set all guest TAP devices so that they
+have a MAC address with 0xFE as the first byte. The real physical NIC
+added to the bridge is thus guaranteed to have a smaller MAC address,
+and so the bridge will permanently use the MAC address of the physical
+NIC, which is what we want.
+
+For bridges which do not have any physical NIC, libvirt will create a
+dummy TAP device, not connected to any guest, and give it a small MAC
+address. This ensures again ensures the bridge MAC address won't change
+when guests start/stop.
+
+
+> How does the libvirt establish the arp table in the hypervisor if the
+> vnet0 device in the hypervisor and the ethX device in the VM is
+> different?
+
+The MAC address of the TAP device is actually totally irrelevant for
+the ARP table maintenance.
+
+If a packet arrives on the bridge and the IP doesn't have a ARP table
+mapping, the bridge will just send it to all connected TAP devices.
+
+When a packet arrives from a guest TAP, the source MAC address will
+be used to populate the ARP table.
+
+In neither case does the MAC address of the TAP device itself have
+any involvement.
+
+The only time the TAP device MAC address has any effect is when
+the kerenel auto-assigns a MAC to the bridge device as explained
+above.
+
+
+Along with everything that Dan has explained, it's important to also
+know that it is essential the tap device's MAC address be different from
+the MAC address used by the guest. The reason is that the tap device
+will not forward a packet to the other side of itself if it sees a
+destination MAC address matching its own - it will think that the packet
+must be intended for local delivery; this is another reason that libvirt
+replaces the 1st byte of the guest address with 0xFE when setting the
+tap device address.
+
