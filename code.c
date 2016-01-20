@@ -1400,3 +1400,42 @@ int main()
 }//链接了有ary1定义的文件，编译失败
 
 
+#include <stdio.h>
+int main(void)
+{
+    static int i = 5;
+    if (--i){
+        printf("%d ", i);
+        main(10);
+    }
+}//编译失败
+#include <stdio.h>
+int main()
+{
+    static int i = 5;
+    if (--i){
+        printf("%d ", i);
+        main(10);
+    }
+}//4 3 2 1
+In C, if a function signature doesn’t specify any argument, it means that the 
+function can be called with any number of parameters or without any parameters. 
+But in c++, There is no dereference, both are the same.
+
+
+The macro arguments are not evaluated before macro expansion.
+
+The tokens passed to macros can be contcatehanted using operator ## called 
+Token-Pasting operator. 
+#define merge(a, b) a##b
+printf("%d ", merge(12, 34));// Output: 1234
+
+A token passed to macro can be converted to a sting literal by using # before it. 
+#define get(a) #a
+printf("%s", get(GeeksQuiz));//Output: GeeksQuiz
+
+file (__FILE__), Date of compilation (__DATE__), Time of compilation (__TIME__)
+and Line Number in C code (__LINE__)
+
+
+
