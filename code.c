@@ -1126,9 +1126,233 @@ va_end(start)
 va_copy(start, dst);
 
 
-
-fprintf(stdout, "%d ", 45);
 fprintf(stderr, "%d ", 65);//65 45, 缓冲的原因
+
+
+unsigned int i = -1;
+printf("%f\n", fabs(i));//garbage value
+
+
+#define OFFSETOF(TYPE, ELEMENT) ((size_t)(uintptr_t)&(((TYPE *)0)->ELEMENT))
+
+#define container_of(ptr, type, member) ({                              \
+                const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
+                (type *)( (char *)__mptr - offsetof(type,member) );})
+
+这里有两个gnu gcc扩展
+
+注意：typeof那一行对于计算结果没有影响，但是可以用来进行类型检查，如果用户传进
+      来的ptr不是期望的类型，则编译器会给出警告/错误
+
+
+
+#define SWAP(a, b)  do { a ^= b; b ^= a; a ^= b; } while ( 0 )
+加{}的原因，加do while的原因
+if(x < 0) SWAP(x, y);
+else SWAP(x, z);
+如果不加{},上面的代码会扩展成什么，如果不加do whille,第一个SWAP后面的各分号会
+导致能编译失败, 当然如果一定要在次出加超过一个分号，那就没有办法了
+
+
+#define PRINT_TOKEN(token) printf(#token " is %d", token)//for debug 方便
+
+x & 1 判断奇偶
+
+判断是否未未2的n次方
+x &  (x -1)
+
+计算x中1的个数
+
+XOR
+Given a set of numbers where all elements occur even number of times except 
+one number, find the odd occuring number” This problem can be efficiently 
+solved by just doing XOR of all numbers.
+
+You are given a list of n-1 integers and these integers are in the range of 1 
+to n. There are no duplicates in list. One of the integers is missing in the 
+list. Write an efficient code to find the missing integer.
+1) XOR all the array elements, let the result of XOR be X1.
+2) XOR all numbers from 1 to n, let XOR be X2.
+3) XOR of X1 and X2 gives the missing number.
+
+
+XOR Linked List – A Memory Efficient Doubly Linked List
+every node stores the XOR of addresses of previous and next nodes.
+node->ptr = prev ^ next;
+
+
+Find the two non-repeating elements in an array of repeating elements
+Let x and y be the non-repeating elements we are looking for and arr[] be the 
+input array. First calculate the XOR of all the array elements.
+xor = arr[0]^arr[1]^arr[2].....arr[n-1]
+All the bits that are set in xor will be set in one non-repeating element 
+(x or y) and not in other. So if we take any set bit of xor and divide the 
+elements of the array in two sets – one set of elements with same bit set and 
+other set with same bit not set. By doing so, we will get x in one set and y 
+in another set. Now if we do XOR of all the elements in first set, we will get 
+first non-repeating element, and by doing same in other set we will get the 
+second non-repeating element.
+
+
+
+Add two numbers without using arithmetic operator
+int add(int x, int y)
+{
+    // Iterate till there is no carry  
+    while (y != 0)
+    {
+        // carry now contains common set bits of x and y
+        int carry = x & y;  
+
+        // Sum of bits of x and y where at least one of the bits is not set
+        x = x ^ y;
+
+        // Carry is shifted by one so that adding it to x gives the required sum
+        y = carry << 1;
+    }
+    return x;
+}
+ 
+int add(int x, int y)
+{
+    if( y==0 )
+        return x;
+    else
+        return add(x ^ y, (x & y)<<1);
+}
+
+Swap bits in a given number
+Given a number x and two positions (from right side) in binary representation
+of x, write a function that swaps n bits at given two positions and returns the
+result. It is also given that the two sets of bits do not overlap.
+
+1) Move all bits of first set to rightmost side
+   set1 =  (x >> p1) & ((1U << n) - 1)
+Here the expression (1U << n) - 1 gives a number that
+contains last n bits set and other bits as 0. We do &
+with this expression so that bits other than the last
+n bits become 0.
+2) Move all bits of second set to rightmost side
+   set2 =  (x >> p2) & ((1U << n) - 1)
+3) XOR the two sets of bits
+   xor = (set1 ^ set2)
+4) Put the xor bits back to their original positions.
+   xor = (xor << p1) | (xor << p2)
+5) Finally, XOR the xor with original number so
+   that the two sets are swapped.
+   result = x ^ xor
+
+int swapBits(unsigned int x, unsigned int p1, unsigned int p2, unsigned int n)
+{
+    /* Move all bits of first set to rightmost side */
+    unsigned int set1 =  (x >> p1) & ((1U << n) - 1);
+ 
+    /* Moce all bits of second set to rightmost side */
+    unsigned int set2 =  (x >> p2) & ((1U << n) - 1);
+ 
+    /* XOR the two sets */
+    unsigned int xor = (set1 ^ set2);
+ 
+    /* Put the xor bits back to their original positions */
+    xor = (xor << p1) | (xor << p2);
+ 
+    /* XOR the 'xor' with the original number so that the
+       two sets are swapped */
+    unsigned int result = x ^ xor;
+ 
+    return result;
+}
+
+
+Count number of bits to be flipped to convert A to B
+xor = A ^ B, 求 xor中set bit的个数
+
+
+Find the element that appears once
+Given an array where every element occurs three times, except one element 
+which occurs only once. Find the element that occurs once. Expected time 
+complexity is O(n) and O(1) extra space.
+
+Run a loop for all elements in array. At the end of every iteration, maintain following two values.
+
+ones: The bits that have appeared 1st time or 4th time or 7th time .. etc.
+
+twos: The bits that have appeared 2nd time or 5th time or 8th time .. etc.
+
+Finally, we return the value of ‘ones’
+
+How to maintain the values of ‘ones’ and ‘twos’?
+‘ones’ and ‘twos’ are initialized as 0. For every new element in array, find 
+out the common set bits in the new element and previous value of ‘ones’. These 
+common set bits are actually the bits that should be added to ‘twos’. So do 
+bitwise OR of the common set bits with ‘twos’. ‘twos’ also gets some extra 
+bits that appear third time. These extra bits are removed later.
+Update ‘ones’ by doing XOR of new element with previous value of ‘ones’. There 
+may be some bits which appear 3rd time. These extra bits are also removed later.
+
+Both ‘ones’ and ‘twos’ contain those extra bits which appear 3rd time. Remove 
+these extra bits by finding out common set bits in ‘ones’ and ‘twos’.
+
+#include <stdio.h>
+ 
+int getSingle(int arr[], int n)
+{
+    int ones = 0, twos = 0 ;
+ 
+    int common_bit_mask;
+ 
+    // Let us take the example of {3, 3, 2, 3} to understand this
+    for( int i=0; i< n; i++ )
+    {
+        /* The expression "one & arr[i]" gives the bits that are
+           there in both 'ones' and new element from arr[].  We
+           add these bits to 'twos' using bitwise OR
+ 
+           Value of 'twos' will be set as 0, 3, 3 and 1 after 1st,
+           2nd, 3rd and 4th iterations respectively */
+        twos  = twos | (ones & arr[i]);
+ 
+ 
+        /* XOR the new bits with previous 'ones' to get all bits
+           appearing odd number of times
+ 
+           Value of 'ones' will be set as 3, 0, 2 and 3 after 1st,
+           2nd, 3rd and 4th iterations respectively */
+        ones  = ones ^ arr[i];
+ 
+ 
+        /* The common bits are those bits which appear third time
+           So these bits should not be there in both 'ones' and 'twos'.
+           common_bit_mask contains all these bits as 0, so that the bits can 
+           be removed from 'ones' and 'twos'   
+ 
+           Value of 'common_bit_mask' will be set as 00, 00, 01 and 10
+           after 1st, 2nd, 3rd and 4th iterations respectively */
+        common_bit_mask = ~(ones & twos);
+ 
+ 
+        /* Remove common bits (the bits that appear third time) from 'ones'
+             
+           Value of 'ones' will be set as 3, 0, 0 and 2 after 1st,
+           2nd, 3rd and 4th iterations respectively */
+        ones &= common_bit_mask;
+ 
+ 
+        /* Remove common bits (the bits that appear third time) from 'twos'
+ 
+           Value of 'twos' will be set as 0, 3, 1 and 0 after 1st,
+           2nd, 3rd and 4th itearations respectively */
+        twos &= common_bit_mask;
+ 
+        // uncomment this code to see intermediate values
+        //printf (" %d %d \n", ones, twos);
+    }
+ 
+    return ones;
+}
+ 
+Detect if two integers have opposite signs
+(x ^ y) < 0
 
 
 
