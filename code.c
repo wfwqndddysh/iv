@@ -844,6 +844,7 @@ printf("%lu\n", sizeof((x==2) ? f: 0)); //==sizeof(double)==sizeof(f)
 //sizeof在什么情况下求表达式的值?
 
 
+<<<<<<< Updated upstream
 Array sizes are optional during array declaration by using external keyword.
 
 
@@ -1354,5 +1355,48 @@ int getSingle(int arr[], int n)
 Detect if two integers have opposite signs
 (x ^ y) < 0
 
+
+
+int main()
+{
+    int k = m();
+    printf("%d", k);
+    return 0;
+}
+void m()
+{
+    printf("hello");
+}
+//gcc有警告，可以编译过去，输出为 hello 5
+//clang 编译失败, 和gcc识别的出的错误时一样的，但更严格一些
+
+
+enum m{JAN, FEB, MAR};
+enum m foo();
+int foo()
+{
+        return JAN;
+}//编译失败，冲突的type for foo
+
+
+
+#include <stdio.h>
+int main()
+{
+    extern ary1[];
+    printf("scope rules\n");
+
+}//未链接 ary1的定义文件时可以编译
+
+
+
+
+#include <stdio.h>
+int main()
+{
+    extern ary1[];
+    printf("%d\n", ary1[0]);
+
+}//链接了有ary1定义的文件，编译失败
 
 
