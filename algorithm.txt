@@ -1,12 +1,24 @@
 1.Gray code
 思路:
 陷阱:
-变量名:
-程序结构:
+变量:
+结构:
+亮点:
+来源:
 
 2.求众数
 思路:
 陷阱:
-变量名:
-程序结构:
+变量:
+结构:
+亮点:
+来源:
+
+3.大数阶乘
+思路:
+陷阱:
+变量:carry, factoral, product, multiply
+结构:
+亮点:用一层循环来模拟school multiply
+来源:geeksforgeeks
 
