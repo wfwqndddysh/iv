@@ -19,6 +19,23 @@
 陷阱:
 变量:carry, factoral, product, multiply
 结构:
-亮点:用一层循环来模拟school multiply
+亮点:用一层循环来模拟school multiply; 低位放在数组的前面，高位放在后面
 来源:geeksforgeeks
+
+3.check if a number can be expressed x^y
+思路:
+陷阱:溢出 while(pow <= x  && pow > 0), 因pow是有可能溢出的
+变量:pow sqrt
+结构:
+亮点:优化1，尝试到sqrt(x)即可停止；优化2，累乘，而不要每次使用pow
+来源:geeksforgeeks
+
+4.find number of a linear equation of n variables
+思路:回溯，递归，dp, dp的思路也不好想, 代码量不大，但是递推公式/不变量不好找
+陷阱:直接递归虽然代码少，但是远没有回溯结构容易理解
+变量:equation solution rhs
+结构:
+亮点:使用dp进行优化
+来源:geeksforgeeks
+
 
