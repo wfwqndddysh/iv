@@ -68,10 +68,10 @@ std::string reverseWords(const std::string& words)
             {
                 res.push_back(' ');
             }
+            //copy word
             for(size_t k=i;  k<j; ++k)
                 res.push_back(words[k]);
         }
-        //copy word
     }
     return res;
 }
@@ -182,6 +182,8 @@ src :
 思路:We need to maintain a sliding window that always contains at most two
      distinct characters, i is the start of the window. k is a pass pointer, j
      and k are always two distinct chars in the window.
+     how to ensure j and k are always two distinct chars in the window?
+     hot to ensure siliding window always contains at most two distinct chars?
 陷阱:
 变量:sliding window longest with without pass pointer
 结构:
@@ -197,6 +199,8 @@ int longestSubstringWithAtMostDistinctCharacters(const std::string& str)
 
         if(j>=0 && str[k] != str[j])
         {
+            //now contains three distinct chars
+            //str[k], str[k-1], (str[j] or str[i])
             maxLen = std:::max(maxLen, k-i);
             i = j+1;
         }
@@ -206,7 +210,27 @@ int longestSubstringWithAtMostDistinctCharacters(const std::string& str)
 
     return std::max(maxLen, str.length()-i);
 }
+int longestSubstringWithAtMostDistinctCharacters(const std::string& str)
+{
+    int count[256] = {0};
+    int countOfDistinct = 0;
+    int maxLen=0;
 
+    for(size_t i=0, j=0; j<str.length(); ++j)
+    {
+        if(count[str[j]]==0) countOfDistinct++;
+        count[str[j]]++;
+
+        while(countOfDistinct>2)
+        {
+            if(--count[str[i]]==0)
+                countOfDistinct--;
+            i++;
+        }
+
+        maxLen = std::max(maxLen, j-i+1);
+    }
+}
 
 
 
