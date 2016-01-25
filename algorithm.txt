@@ -178,7 +178,7 @@ public boolean isNumber(String s) {
 来源:
 src :
 
-11. Longest Substring with At Most Two Distinct Characters
+8. Longest Substring with At Most Two Distinct Characters
 思路:We need to maintain a sliding window that always contains at most two
      distinct characters, i is the start of the window. k is a pass pointer, j
      and k are always two distinct chars in the window.
@@ -232,6 +232,108 @@ int longestSubstringWithAtMostDistinctCharacters(const std::string& str)
     }
 }
 
+9.   Missing Ranges.Given a sorted integer array where the range of elements are
+     [0, 99] inclusive, return its
+     missing ranges.
+思路:
+陷阱:
+变量:miss range prev curr
+结构:
+亮点:add two “artificial” elements
+来源:
+src :
+std::vector<std::string> findMissingRanges(const std::vector<int>& vals, int start, int end)
+{
+    std::vector<std::string> ranges;
+    int len = vals.length();
+    int prev = start-1;
+
+    for(size_t i=0; i<=len; ++i)
+    {
+        int curr = (i==len ? end+1 : vals[i]);
+        if(curr-prev>=2)
+        {
+            getRanges(ranges, prev+1, curr-1);
+        }
+
+        prev = curr;
+    }
+}
+void getRanges(std::vector<std::string>& ranges, int from, int to)
+{
+    ranges.push_back(from==to ? std::to_string(from) : std::to_string(from) + "->" + std::to_string(to));
+}
+
+10.  Longest Palindromic Substring
+思路:把所有可能的情况从里向外扩展，找到其中最长的
+陷阱:
+变量:expand Around Center odd even
+结构:
+亮点:从里向外扩展, 奇偶同时处理
+来源:
+src :
+std::string longestPalindromicSubstring(const std::string& str)
+{
+    int len = 0;
+    int start = 0
+    int end = 0;
+
+    for(int i=0; i<str.length(); ++i)
+    {
+        int lenOdd = expandAroundCenter(str, i, i);
+        int lenEven = expandAroundCenter(str, i, i+1);
+        len = std::max(lenOdd, lenEven);
+
+        if(len>end-start)
+        {
+            start = i - (len-1)/2; //需要带入case进行验证
+            end = i + len/2; //需要带入case进行验证
+        }
+    }
+    return str.substr(start, end+1);
+}
+size_t expandAroundCenter(const std::string& str, int left, int right)
+{
+    int L = left, R = right;
+
+    while(L>=0 && R<str.length() && str[L]==str[R])
+    {
+        L--; R++;
+    }
+    return R-L-1;
+}
+
+std::string longestPalindromicSubstringManacher(const std::string& str)
+{
+}
+
+11.  one edit distance
+思路:不难，分开m==n和m!=的情况
+陷阱:
+变量:shift
+结构:
+亮点:代码能如此简洁, 反转参数顺序后调用同名函数，处理对称case的经典做法
+来源:leetcode
+src :
+bool isOneEditDistance(const std::string& s, const std::string& t)
+{
+    int m=s.length(), n = t.length();
+
+    if(m>n) return isOneEditDistance(t, s);
+
+    int shift = m - n;
+
+    int i=0;
+    while(i<m && s[i]==t[i]) i++;
+
+    if(i==m) return shift>0;
+
+    if(shift==0) i++;
+
+    while(i<m && s[i]==t[i+shift]) i++;
+
+    return i==m;
+}//其实这个代码里有很多为了代码简化而合并case的情况，其实不见得这样是好的
 
 
 
