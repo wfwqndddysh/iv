@@ -5,14 +5,16 @@
 结构:
 亮点:
 来源:
+src :
 
 2.求众数
 思路:
-陷阱:
+陷阱:要重新验证最终的结果
 变量:
 结构:
 亮点:
 来源:
+src :
 
 3.大数阶乘
 思路:
@@ -21,14 +23,16 @@
 结构:
 亮点:用一层循环来模拟school multiply; 低位放在数组的前面，高位放在后面
 来源:geeksforgeeks
+src :
 
 3.check if a number can be expressed x^y
 思路:
-陷阱:溢出 while(pow <= x  && pow > 0), 因pow是有可能溢出的
+陷阱:溢出 while(pow <= x && pow > 0), 因pow是有可能溢出的
 变量:pow sqrt
 结构:
 亮点:优化1，尝试到sqrt(x)即可停止；优化2，累乘，而不要每次使用pow
 来源:geeksforgeeks
+src :
 
 4.find number of a linear equation of n variables
 思路:回溯，递归，dp, dp的思路也不好想, 代码量不大，但是递推公式/不变量不好找
@@ -37,5 +41,181 @@
 结构:
 亮点:使用dp进行优化
 来源:geeksforgeeks
+src :
 
+4.1. reverse words in a string
+思路:
+陷阱:what is a word ? head space ? tail space ? one space ? what is sapce ?
+变量:
+结构:从后往前找word；需要判断的特殊情况：
+亮点:要找的大是[beg, end), 闭开区间, 记住这一点就能减少很多代码, 可以访问word[i-1]
+来源:
+src :
+std::string reverseWords(const std::string& words)
+{
+    std::string res;
+    size_t j = words.length();
+
+    for(size_t i=j-1; i>=0; --i)
+    {
+        if(words[i] == ' ')
+        {
+            j = i;
+        }
+        else if(i==0 || words[i-1]==' ')
+        {
+            if(res.length()!=0)
+            {
+                res.push_back(' ');
+            }
+            for(size_t k=i;  k<j; ++k)
+                res.push_back(words[k]);
+        }
+        //copy word
+    }
+    return res;
+}
+
+4.2. reverse words in a string(no leading space, trailing space and space is single)
+思路:整体反转，按单词反转, in place
+陷阱:在使用[beg, end)闭开区间时要注意结束约束条件 j<=words.length()
+变量:
+结构:
+亮点:
+来源:
+src :
+void reverse(const std::string& words, size_t beg, size_t end)
+{
+    for(size_t i=0, ; i<(end-beg)/2; ++i)
+    {
+        char temp = str[beg+i];
+        str[beg+i] = str[end-i-1];
+        str[end-i-1] = temp;
+    }
+}
+void reversWords(const std::string& words)
+{
+    revers(words, 0, words.length());
+
+    for(size_t i=0, size_t j=0; j<=words.length(); ++j)
+    {
+        if(words[j] == ' ' || j==words.length())
+        {
+            reverse(words, i, j);
+            i = j+1;
+        }
+    }
+}
+
+4.3. reverse words in a string (input same to 4.1), in place
+思路:整体反转，按但词反转，除了要维护一个读指针外，我们还需要维护一个写指针，表明
+     反转后的单词写在哪里，在反转单词时，先移到目标位置后在目标位置上进行反转
+陷阱:
+变量:read write dest start
+结构:
+亮点:
+来源:leetcode
+src :
+
+5. string to integer(atoi)
+思路:
+陷阱:处理溢出情况，这是词题的重点。一种方法是用int64_t;另一种方法是只用int：
+     if (num > maxDiv10 || num == maxDiv10 && digit >= 8)
+        return sign == 1 ? Integer.MAX_VALUE : Integer.MIN_VALUE;
+变量:
+结构:
+亮点:把是否为num的判断也放在for循环条件里来可以减少很多代码
+来源:leetcode
+src :
+
+6. Validate if a given string is numeric.
+思路:分块处理是很重要的
+陷阱:
+变量:
+结构:
+亮点:
+来源:
+src :
+public boolean isNumber(String s) {
+    int i = 0, n = s.length();
+    while (i < n && Character.isWhitespace(s.charAt(i))) i++;
+    if (i < n && (s.charAt(i) == '+' || s.charAt(i) == '-')) i++;
+    boolean isNumeric = false;
+    while (i < n && Character.isDigit(s.charAt(i))) {
+        i++;
+        isNumeric = true;
+    }
+    if (i < n && s.charAt(i) == '.') {
+        i++;
+        while (i < n && Character.isDigit(s.charAt(i))) {
+            i++;
+            isNumeric = true;
+        }
+    }
+
+    //process exponent part start
+    if (isNumeric && i < n && s.charAt(i) == 'e') {
+        i++;
+        isNumeric = false;
+        if (i < n && (s.charAt(i) == '+' || s.charAt(i) == '-')) i++;
+        while (i < n && Character.isDigit(s.charAt(i))) {
+            i++;
+            isNumeric = true;
+        }
+    }
+    //process exponent part end
+
+    while (i < n && Character.isWhitespace(s.charAt(i))) i++;
+    return isNumeric && i == n;
+}
+
+7. Longest Substring Without Repeating Characters
+思路:hashtable, 不过如果是ascii字符,那么使用一个定长256数组即可，因为最长也是256
+陷阱:
+变量:flag unordered_map longest without repeat
+结构:
+亮点:
+来源:
+src :
+
+11. Longest Substring with At Most Two Distinct Characters
+思路:We need to maintain a sliding window that always contains at most two
+     distinct characters, i is the start of the window. k is a pass pointer, j
+     and k are always two distinct chars in the window.
+陷阱:
+变量:sliding window longest with without pass pointer
+结构:
+亮点:不变式的选取, 三个指针的维护
+来源:
+src :
+int longestSubstringWithAtMostDistinctCharacters(const std::string& str)
+{
+    int i=0, j=-1, maxLen=0;
+    for(int k=1; k<str.length(); ++k)
+    {
+        if(str[k]==str[k-1]) continue;
+
+        if(j>=0 && str[k] != str[j])
+        {
+            maxLen = std:::max(maxLen, k-i);
+            i = j+1;
+        }
+
+        j = k-1;
+    }
+
+    return std::max(maxLen, str.length()-i);
+}
+
+
+
+
+
+思路:
+陷阱:
+变量:
+结构:
+亮点:
+来源:
+src :
 
