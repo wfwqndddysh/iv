@@ -335,6 +335,31 @@ bool isOneEditDistance(const std::string& s, const std::string& t)
     return i==m;
 }//其实这个代码里有很多为了代码简化而合并case的情况，其实不见得这样是好的
 
+12.  reverse integer
+思路:
+陷阱:溢出问题和各种corner case的return value
+变量:
+结构:
+亮点:
+来源:leetcode
+src :
+int reverseInteger(int x)
+{
+    int res=0;
+    int maxDiv10 = INT_MAX/10;
+
+    while(x != 0)
+    {
+        if(abs(res) > maxDiv10)
+            return 0;
+
+        res = res * 10 + x % 10;
+        x = x / 10;
+    }
+    return res;
+}
+
+
 
 
 思路:
