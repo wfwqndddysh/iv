@@ -1,2 +1,9 @@
 gitg --git gui client
 iftop --network 流量监测
+
+vim:
+:g/pattern/d 是找到pattern, 删之
+:v/pattern/d 是找到非pattern, 删之
+:%s/xxx//gn，统计xxx个数，n表示只报告匹配的个数而不进行实际的替换。
+详见「:help :v」或「:help :g」
+
