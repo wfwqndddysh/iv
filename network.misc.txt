@@ -110,3 +110,350 @@ must be intended for local delivery; this is another reason that libvirt
 replaces the 1st byte of the guest address with 0xFE when setting the
 tap device address.
 
+
+两块网卡的策略路由
+ip route flush table dx
+ip route flush table wt
+
+ip route add 192.168.1.0/24 dev eth1 src 192.168.1.162 table dx
+ip route add default via 192.168.1.1 table dx
+ip route add 172.16.1.0/24 dev eth0 src 172.16.1.162 table wt
+ip route add default via 172.16.1.1 table wt
+
+ip route add 192.168.1.0/24 dev eth1 src 192.168.1.162 table main
+ip route add 172.16.1.0/24 dev eth0 src 172.16.1.162 table main
+
+ip rule add from 192.168.1.162 table dx
+ip rule add from 172.16.1.162 table wt
+
+
+两张网卡不对称路由的原因及解决方案
+http://jensd.be/468/linux/two-network-cards-rp_filter
+
+
+When configuring a Linux host running either Red Hat Linux 6, Red Hat Linux 7, CentOS 6 or CentOS7 with two network interface cards (NIC) that each have an IP address in a different network or subnet, you could end up in a situation where one of the IP addresses isn’t reachable outside it’s own network. Both IP’s will be responding to a ping from another host in the same network as those IP addresses but only one is responding to ping from another network. On most other distributions, like Debian, this issue, which is caused by asymmetric routing, doesn’t seem to exist.
+
+
+When you’re experiencing this issue, it is most probably caused by asymmetric routing. In short this means that the interface that has received a packet doesn’t respond to the source of the packet by itself but via another interface. While this causes one of the interfaces to be unavailable from the outside on Red Hat based distributions, the problems with asymmetric routing also do exist on the other distributions although it seems to work fine.
+
+Asymmetric routing
+
+Asymmetric routing isn’t a big problem but it can cause issues related to NAT on firewalls and it has some impact on network performance.
+routing_symmetricThe above image shows asymmetric routing: a packet sent from client A to the server, enters the server via network-interface eth0 but, due to the routing, it’s routed back to client A via interface eth1 of the server. For the client, it looks like everything is working normal. Packets do flow in and out from the server. It’s clear that interface eth1 will have a higher load that eth0 and while you’re thinking that you have two full 1Gbit interfaces, the speed is limited to the speed of eth1.
+
+rp_filter
+
+Since RHEL 6 (and CentOS 6), asymmetric routing doesn’t work anymore out of the box. The cause of the issue is a change in the default value for kernel parameter rp_filter.
+
+Rp_filter stands for reverse path filtering. The reverse path filter will check if the source of a packet that was received on a certain interface is reachable trough the same interface it was received. The purpose is to prevent spoofed packets, with a changed source address, not being processed/routed further. In a router it could also prevent routing packets that have a private IP as source to the internet as they obviously will never find their way back.
+
+Since RHEL 6 and its derivative CentOS 6, rp_filter, which can be controlled by kernel parameters, is set on a default value of 1. This means that the rp_filter is operational in strict mode and does exactly what it is designed for.
+
+Possible value are:
+
+0: No source validation
+1: Strict mode (failed packets are discarded), described in RFC3704
+2: Loose mode, only discards the packet when it isn’t routable over any of the interfaces on the host.
+To test this behavior, I set up a system that is connected to two networks: 192.168.0.0/24 and 192.168.1.0/24. I have a client in both networks and a client which is in another network.
+
+The server:
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+19
+20
+21
+22
+[jensd@server ~]$ ip a|grep "inet "
+    inet 127.0.0.1/8 scope host lo
+    inet 192.168.0.10/22 brd 192.168.0.255 scope global ens192
+    inet 192.168.1.10/24 brd 192.168.1.255 scope global ens224
+[jensd@server ~]$ ip route
+default via 192.168.0.1 dev ens192
+169.254.0.0/16 dev ens192  scope link  metric 1002
+169.254.0.0/16 dev ens224  scope link  metric 1003
+192.168.1.0/24 dev ens224  proto kernel  scope link  src 192.168.1.10
+192.168.0.0/24 dev ens192  proto kernel  scope link  src 192.168.0.10
+[jensd@server ~]$ sysctl -a|grep rp_filter
+...
+net.ipv4.conf.all.arp_filter = 0
+net.ipv4.conf.all.rp_filter = 0
+net.ipv4.conf.default.arp_filter = 0
+net.ipv4.conf.default.rp_filter = 1
+net.ipv4.conf.ens192.arp_filter = 0
+net.ipv4.conf.ens192.rp_filter = 1
+net.ipv4.conf.ens224.arp_filter = 0
+net.ipv4.conf.ens224.rp_filter = 1
+net.ipv4.conf.lo.arp_filter = 0
+net.ipv4.conf.lo.rp_filter = 0
+Ping to the server from a client in the 192.168.0.0/24 network:
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+[jensd@clienta ~]$ ip a|grep "inet "
+    inet 127.0.0.1/8 scope host lo
+    inet 192.168.0.5/24 brd 192.168.0.255 scope global eth0
+[jensd@clienta ~]$ ping 192.168.0.10 -c 1
+PING 192.168.0.10 (192.168.0.10) 56(84) bytes of data.
+64 bytes from 192.168.0.10: icmp_seq=1 ttl=64 time=0.300 ms
+ 
+--- 192.168.0.10 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.300/0.300/0.300/0.000 ms
+Ping to the server from a client in the 192.168.1.0/24 network
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+[jensd@clientb ~]$ ip a|grep "inet "
+    inet 127.0.0.1/8 scope host lo
+    inet 192.168.1.5/24 brd 192.168.1.255 scope global eth0
+[jensd@clientb ~]$ ping 192.168.1.10 -c 1
+PING 192.168.1.10 (192.168.1.10) 56(84) bytes of data.
+64 bytes from 192.168.1.10: icmp_seq=1 ttl=64 time=0.362 ms
+ 
+--- 192.168.1.10 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.362/0.362/0.362/0.000 ms
+Ping to both IP’s from a client in another network:
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+[jensd@clientc ~]# ip a|grep "inet "
+    inet 127.0.0.1/8 scope host lo
+    inet 192.168.2.5/24 brd 192.168.2.255 scope global eth0
+[jensd@clientc ~]$ ping 192.168.0.10 -c 1
+PING 192.168.0.10 (192.168.0.10) 56(84) bytes of data.
+64 bytes from 192.168.0.10: icmp_seq=1 ttl=63 time=1.09 ms
+ 
+--- 192.168.0.10 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 1ms
+rtt min/avg/max/mdev = 1.093/1.093/1.093/0.000 ms
+[jensd@clientc ~]$ ping 192.168.1.10 -c 1
+PING 192.168.1.10 (192.168.1.10) 56(84) bytes of data.
+ 
+--- 192.168.1.10 ping statistics ---
+1 packets transmitted, 0 received, 100% packet loss, time 10000ms
+As you can see, both IP’s are reachable from within the same network but only one, the one that has it’s default gateway in the routing table, is reachable from other networks.
+
+In the output from the server, you can see that rp_filter for both interfaces has a value of 1, strict mode.
+
+The quick and dirty solution
+
+The easiest solution is just to change the value of rp_filter to allow packets to flow out of another interface that the source interface.
+
+Now, let’s change the value of rp_filter to loose mode, value 2 and see what happens:
+
+1
+2
+[jensd@server ~]$ sudo sysctl net.ipv4.conf.all.rp_filter=2
+net.ipv4.conf.all.rp_filter = 2
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+[jensd@clientc ~]$ ping 192.168.0.10 -c 1
+PING 192.168.0.10 (192.168.0.10) 56(84) bytes of data.
+64 bytes from 192.168.0.10: icmp_seq=1 ttl=63 time=0.282 ms
+ 
+--- 192.168.0.10 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.282/0.282/0.282/0.000 ms
+[jensd@clientc ~]$ ping 192.168.1.10 -c 1
+PING 192.168.1.10 (192.168.1.10) 56(84) bytes of data.
+64 bytes from 192.168.1.10: icmp_seq=1 ttl=63 time=0.550 ms
+ 
+--- 192.168.1.10 ping statistics ---
+1 packets transmitted, 1 received, 0% packet loss, time 0ms
+rtt min/avg/max/mdev = 0.550/0.550/0.550/0.000 ms
+With a minimum of effort, both IP addresses are reachable from the outside. To make the change to rp_filter permanent, you can do the following:
+
+For RHEL 6 and CentOS 6:
+
+Edit /etc/sysctl.conf and change the value for rp_filter:
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+# Kernel sysctl configuration file for Red Hat Linux
+#
+# For binary values, 0 is disabled, 1 is enabled.  See sysctl(8) and
+# sysctl.conf(5) for more details.
+ 
+# Controls IP packet forwarding
+net.ipv4.ip_forward = 1
+ 
+# Controls source route verification
+net.ipv4.conf.default.rp_filter = 2
+...
+For RHEL 7 and CentOS 7:
+
+1
+[jensd@server ~]$ echo "net.ipv4.conf.all.rp_filter = 2"|sudo tee /etc/sysctl.d/99-rp_filter.conf
+The best solution
+
+Besides the quick solution, there is also a better solution. While changing the value for rp_filter is getting both interfaces and IP-addresses to respond from other networks, the setup is still asymmetric. The best solution is to get rid of the asymmetric routing and let each interface route it’s own packets to the default gateway.
+
+The goal is to become symmetric routing:
+
+routing_asymmetric
+
+Each interface on the server should have it’s own default gateway, which allows that interface to reply itself to incoming packets from other networks.
+
+A normal routing table can only have one default gateway. This is quite logical since it’s the place where to send packets that do not match anything else in the rest of the table. To be able to have two default gateways, one for each interface, you need to setup policy based routing.
+
+Policy based routing allows you to have multiple routing tables. Which table is used, depends on a set of rules.
+
+To setup policy based routing for our example case, we will use two policy based tables. While it is possible to give a nice name to the tables (in /etc/iproute2/rt_tables), it’s not really when you only plan to have a few. Without a name, the tables are automatically created when you’re adding something to them.
+
+Let’s start with adding a route for the network itself (link) and one for the default gateway for each interface. ens192 (192.168.0.10) will use table 1, ens224 (192.168.1.10) will use table 2.
+
+1
+2
+3
+4
+[jensd@server ~]$ sudo ip route add 192.168.0.0/24 dev ens192 tab 1
+[jensd@server ~]$ sudo ip route add 192.168.1.0/24 dev ens224 tab 2
+[jensd@server ~]$ sudo ip route add default via 192.168.0.1 dev ens192 tab 1
+[jensd@server ~]$ sudo ip route add default via 192.168.1.1 dev ens224 tab 2
+To define when table 1 or 2 will be used, we’ll add a rule, based on the source of the packet to the policy and refresh the policy based routing:
+
+1
+2
+3
+[jensd@server ~]$ sudo ip rule add from 192.168.0.10/32 tab 1 priority 100
+[jensd@server ~]$ sudo ip rule add from 192.168.1.10/32 tab 2 priority 200
+[jensd@server ~]$ sudo ip route flush cache
+To check if we did everything correctly, let’s list the tables and the rules:
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+11
+12
+13
+14
+15
+16
+17
+18
+[jensd@server ~]$ ip route show tab 1
+default via 192.168.0.1 dev ens192
+192.168.0.0/24 dev ens192  scope link
+[jensd@server ~]$ ip route show tab 2
+default via 192.168.1.1 dev ens224
+192.168.1.0/24 dev ens224  scope link
+[jensd@server ~]$ ip rule show
+0:      from all lookup local
+100:    from 192.168.0.10 lookup 1
+200:    from 192.168.1.10 lookup 2
+32766:  from all lookup main
+32767:  from all lookup default
+[jensd@server ~]$ ip route
+default via 192.168.0.10 dev ens192
+169.254.0.0/16 dev ens192  scope link  metric 1002
+169.254.0.0/16 dev ens224  scope link  metric 1003
+192.168.1.0/24 dev ens224  proto kernel  scope link  src 192.168.1.10
+192.168.0.0/24 dev ens192  proto kernel  scope link  src 192.168.0.10
+As you can see in the output from ip rule show, our policy based tables have a higher priority than the main table, which can be viewed with ip route. Nevertheless it’s import to still have a default route in the main table since packets leaving the machine itself can have a source IP of 0.0.0.0 and would not match any of the rules in our policy.
+
+Make the changes permanent
+
+Up to now, the changes would get lost after a reboot or restart of the networking. To make the changes permanent, create a route and rule file for every interface. For the above example, the contents would look like this:
+
+1
+2
+3
+4
+5
+6
+7
+8
+9
+10
+[jensd@server ~]$ cat /etc/sysconfig/network-scripts/route-ens192
+192.168.0.0/24 dev ens192 tab 1
+default via 192.168.0.1 dev ens192 tab 1
+[jensd@server ~]$ cat /etc/sysconfig/network-scripts/route-ens224
+192.168.1.0/24 dev ens224 tab 2
+default via 192.168.1.1 dev ens224 tab 2
+[jensd@server ~]$ cat /etc/sysconfig/network-scripts/rule-ens192
+from 192.168.0.10/32 tab 1 priority 100
+[jensd@server ~]$ cat /etc/sysconfig/network-scripts/rule-ens224
+from 192.168.1.10/32 tab 2 priority 200
+Now your configuration should be persistent.
+
+While this solution is slightly more work than changing the value for rp_filter, it isn’t that hard and has a lot of advantages over the other solution.
+
+
+
+
