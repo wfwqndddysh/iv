@@ -1,0 +1,22 @@
+map insert 和 []插入的区别
+
+insert时需要注意的地方
+
+select poll epoll 区别
+
+lua 和 c 数据交换方式和需要主要的地方
+
+corotine 和 thread 的区别
+
+c++  各种 cast 的用法和区别
+
+heap sort
+
+quick sort
+
+一个进程如何变成守护进程
+
+一个进程监听某个端口后创建一个新进程，父进程退出, 子进程是否继续监听
+
+new 和 malloc 的区别
+

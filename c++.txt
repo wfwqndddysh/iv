@@ -580,3 +580,65 @@ template< class T > class shared_ptr;
 
 -------------------------------------------------------------------------------
 
+static_cast<> uses sensible, well-defined conversions. For example, the
+integer 10 would be converted to the double 10.0.
+
+reinterpret_cast<> just looks at the bits in memory in as if they were
+the encoding as a different type. For example, the integer 10 would
+look like some number who-knows-what as a double.
+
+There are two major differences:
+1. static_cast won't convert certain types (you'll get a compile error).
+2. when both will perform the conversion, the nature of the conversion is different.
+   static_cast 处理的是相关的转换 related
+
+static_cast has two uses:
+First it will force a conversion that could have happened implicitly.
+*********************************************************************
+For example:
+double value = 1.45;
+double remainder = value - static_cast<int>(value);
+
+Here we force a conversion that could be done implicitly with an extra temporary variable.
+The other use, is to reverse a defined conversion. If there is a valid forward conversion,
+******************************************************************************************
+in most cases you can reverse it with a static cast.
+****************************************************
+
+struct Base {
+};
+struct Derived : Base {
+};
+
+Derived d;
+Base* bp = &d; // implicit conversion.
+Derived* dp = static_cast<Derived*>(bp); // invert valid conversion.
+
+A reinterpret cast pretty much says, treat these bits as another type. Its results are implementation
+specific in most cases. You can do things like:
+char* foo = ...
+
+unsigned char* foo = reinterpret_cast<unsigned char*>(foo); // force type change!
+
+Needless to say you should think twice in general before doing this. The compiler will
+refuse to do the static_cast of the above types because they are unrelated (no conversion
+*****************************************************************************************
+defined in either direction).
+*****************************
+
+Now here's a case where they both casts will do something different (in many circumstances):
+
+struct BaseA {
+char a;
+};
+struct BaseB {
+char b;
+};
+struct Derived : BaseA, BaseB {
+};
+
+Derived d;
+BaseB* bp = static_cast<BaseB*>(&d); // valid: bp now points to BaseB subobject of d
+BaseB* rp = reinterpret_cast<BaseB*>(&d); // probably not valid, could result in rp pointing at
+// the BaseA memory in d but with the BaseB* type.
+
