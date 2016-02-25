@@ -642,3 +642,18 @@ BaseB* bp = static_cast<BaseB*>(&d); // valid: bp now points to BaseB subobject 
 BaseB* rp = reinterpret_cast<BaseB*>(&d); // probably not valid, could result in rp pointing at
 // the BaseA memory in d but with the BaseB* type.
 
+
+
+
+
+===============================================================================
+C++ IDIOM
+
+1.Motivation
+    To extract out a type independent but type customizable functionality in a base
+    class and to mix-in that interface/property/behavior into a derived class,
+    customized for the derived class.
+Solution and Sample Code
+    In CRTP idiom, a class T, inherits from a template that specializes on T.
+    class T : public X<T> {…};
+

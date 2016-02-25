@@ -1,0 +1,2 @@
+动态演示paxos算法
+http://harry.me/blog/2014/12/27/neat-algorithms-paxos/
