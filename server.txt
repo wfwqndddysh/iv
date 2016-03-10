@@ -1,2 +1,4 @@
 nginx源码注释
 https://github.com/y123456yz/reading-code-of-nginx-1.9.2
+
+http://www.cnblogs.com/yjf512/archive/2012/06/13/2548515.html
