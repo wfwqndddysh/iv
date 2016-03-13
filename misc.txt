@@ -1,0 +1,106 @@
+map insert 和 []插入的区别
+
+insert时需要注意的地方
+
+std::map的insert和下标[]访问
+在map中插入元素
+
+改变map中的条目非常简单，因为map类已经对[]操作符进行了重载
+
+enumMap[1] = "One";
+enumMap[2] = "Two";
+.....
+
+这样非常直观，但存在一个性能的问题。插入2时,先在enumMap中查找主键为2的项，没发
+现，然后将一个新的对象插入enumMap，键是2，值是一个空字符串，插入完成后，将字符
+串赋为"Two"; 该方法会将每个值都赋为缺省值，然后再赋为显示的值，如果元素是类对
+象，则开销比较大。我们可以用以下方法来避免开销：
+
+enumMap.insert(map<int, CString> :: value_type(2, "Two"))
+
+
+insert()方法：若插入的元素的键值已经存在于map中，那么插入就会失败，不会修改元素
+的键对应的值；若键值在map中查不到，那么就会将该新元素加到map中去。
+
+下标[key]方法：若插入元素的键值已经存在于map中，那么会更新该键值对应的值为新的
+元素的值；若该键值在map中找不到，那么就会新建一个键值为该键（key）的元素，并将
+key对应的值赋值为默认值（默认构造函数生成的对象）。
+
+
+select poll epoll 区别
+http://www.ulduzsoft.com/2014/01/select-poll-epoll-practical-difference-for-system-architects/
+
+1. An epoll file descriptor has a private struct eventpoll that keeps track of
+which fd's are attached to this fd. struct eventpoll also has a wait queue that
+keeps track of all processes that are currently epoll_waiting on this fd. 
+struct epoll also has a list of all file descriptors that are currently available for reading or writing.
+
+2. When you add a file descriptor to an epoll fd using epoll_ctl, epoll adds
+the struct eventpoll to that fd's wait queue. It also checks if the fd is
+currently ready for processing and adds it to the ready list, if so.
+
+3. When you wait on an epoll fd using epoll_wait, the kernel first checks the
+ready list, and returns immediately if any file descriptors are already ready.
+If not, it adds itself to the single wait queue inside struct eventpoll, and goes to sleep.
+
+4. When an event occurs on a socket that is being epoll()ed, it calls the epoll
+callback, which adds the file descriptor to the ready list, and also wakes up
+any waiters that are currently waiting on that struct eventpoll.
+
+Edge和Level触发的中断
+
+异步I/O中的Edge-Triggered和Level-Triggered是非常重要的概念；Edge-Triggered字面
+上理解就是指“边界触发”，说的是当状态变化的时候触发，以后如果状态一直没有变化或
+没有重新要求系统给出通知，将不再通知应用程序；Level-Triggered是指“状态触发”，
+说的是在某种状态下触发，如果一直在这种状态下就一直触发。两种触发方式各有用途，
+应根据不同的应用采用不同的触发方式。select一般默认采用的是Level-Triggered，而
+EPoll既可以采用Edge-Triggered，也可以采用Level-Triggered，默认是Level-Triggered，
+而MS的CPIO按这种定义来说应该属于Edge-Triggered。对于已经封装好的异步I/O架构来说，
+具体采用哪种方式其实无伤大雅，因为无论采用哪种方式，都需要在内部都实现正确了，
+并且让使用者不再关心这种具体的触发方式为好。【本段转至here】
+
+边缘触发是指每当状态变化时发生一个io事件，条件触发是只要满足条件就发生一个io事
+件。举个读socket的例子，假定经过长时间的沉默后，现在来了100个字节，这时无论边缘
+触发和条件触发都会产生一个read ready notification通知应用程序可读。应用程序读了
+50个字节，然后重新调用api等待io事件。这时条件触发的api会因为还有50个字节可读从
+而立即返回用户一个read ready notification。而边缘触发的api会因为可读这个状态没
+有发生变化而陷入长期等待。因此在使用边缘触发的api时，要注意每次都要读到socket返
+回EWOULDBLOCK为止，否则这个socket就算废了。而使用条件触发的api时，如果应用程序
+不需要写就不要关注socket可写的事件，否则就会无限次的立即返回一个write ready
+notification。大家常用的select就是属于条件触发这一类，以前本人就犯过长期关注
+socket写事件从而CPU 100%的毛病。【本段转至这里】
+
+事件分离器负责将请求事件传递给事件处理器。两个与事件分离器有关的模式是Reactor和
+Proactor。Reactor模式采用同步IO，而Proactor采用异步IO。
+
+什么是同步和异步,同步和异步是针对应用程序和内核的交互而言的，同步指的是用户进程
+触发IO操作并等待或者轮询的去查看IO操作是否就绪，而异步是指用户进程触发IO操作以
+后便开始做自己的事情，而当IO操作已经完成的时候会得到IO完成的通知（异步的特点就
+是通知）。而阻塞和非阻塞是针对于进程在访问数据的时候，根据IO操作的就绪状态来采
+取的不同方式，说白了是一种读取或者写入操作函数的实现方式，阻塞方式下读取或者写
+入函数将一直等待，而非阻塞方式下，读取或者写入函数会立即返回一个状态值。
+
+reactor proactor
+Reactor is an OO way of doing nonblocking I/O, and Proactor is an OO way of doing asynchronous I/O.
+level trigged
+edge trigged
+
+http://www.artima.com/articles/io_design_patterns.html
+
+
+lua 和 c 数据交换方式和需要主要的地方
+
+corotine 和 thread 的区别
+
+c++  各种 cast 的用法和区别
+
+heap sort
+
+quick sort
+
+一个进程如何变成守护进程
+
+一个进程监听某个端口后创建一个新进程，父进程退出, 子进程是否继续监听
+
+new 和 malloc 的区别
+

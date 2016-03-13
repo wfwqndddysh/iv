@@ -77,14 +77,79 @@ OpenFlow消息所传递上来的消息，其中存储的数据为一个Ethernet�
 
 
 
+module:一个模块既可以是service,也可以是listener,使用别人提供的service
+模块可配置
+模块之间可以有依赖
+
+SERVICE:
+    IFloodlightProviderService---->(all.receive())//这个是出发点
+    IOFMessageListener
+    IOFSwitchListener
+
+    IEntityService---->receive()---->(
+                                        macflowtable.entityAdded(), //mac learning
+                                        forwardflowtable.entityAdded(), //mac forwarding
+                                        outputflowtable.entityAdded(),  //vpc 封装mac封装
+                                        对称的有entityRemoved(),对应的删除flow, idle_time 超时
+                                     )
+                      另外两个调用entityRemoved的地方是portAdded()和portMigrate()
+                      也就是说如果有port del，则由和该port有关的entity所加flow要删除
+
+
+    IPortListener
+    IPktInspectListener
+    PktHTTPInspectListener
+
+
+firewall:
+有状态的firewall: new , related, established, invalid
+
+只有2,4表时的问题----即使没有acl，也要到floodlight建flow，暴涨
+table_2:match_group(group_id/0, 254), 对于ovs进，对于vm出
+table_4:match_group(group_id/0, 254), 对于ovs出，对于vm进
+
+table=254, priority=2,out_port=0,group_id=0 actions=resubmit(,3)
+table=254, priority=1,group_id=0,dl_dst=01:00:00:00:00:00/01:00:00:00:00:00 actions=resubmit(,5)
+table=254, priority=0,group_id=0 actions=CONTROLLER:65535
+
+t2---->t254(匹配out_port=0, group_id(acl)=, 如果acl允许(group_id=0, 表示允许)，action=resubmit(, 3)，否则drop)---->3(找到出端口，即out_port!=0了)---->t4(找到出group_id(acl)=)---->t254(out_port!=0, 匹配出ovs(进vm)的acl，如果acl允许(group_id=0表示允许), action=Controller, 否则drop)
+
+添加7,8的原因和效果
+table_2:match_group(group_id/空, 254), 对于ovs进，对于vm出
+table_4:match_group(group_id/空, 254), 对于ovs出，对于vm进
+table_7:forword---->和table3的目的一样，决定出口, 不能使用3的原因是, 我们现在要提交到8，8和4是不一样的(如果到了7，那vm就是一定有出acl的)
+table_8:match_group(不管vm有没有进acl，都进入254，过则上交floodlight，否则drop)
+
+table_254: 真正的acl规则存放表, 使用match_group的目的, 实现有状态的防火墙, 以前254提交到3的现在提交到7
+
+工作原理:匹配流程，建flow，删除flow，bug
+
+
+vpc, 隔离和二层路由(forwarding)
+
+vnat原理
+
+arp如何处理，代理
+
+
+netfilter:
+qos:
+
+
+
+
 old version flow table
 
-0:filter
+0:filter, mac unchanged实现在这里
 1:mac learning
 2:firewall
 3:mac router
 4:firewall
 5:output
+
+7:for firewall
+8:for firewall
+254:for firewall
 
 new version flow table
 

@@ -1,0 +1,7 @@
+table=0: filter
+
+110, in_prot=1, [vlan=, ]
+
+104, in_port>1, [src_mac=,(mac unchanged)] mod_vlan
+
+103, lldp

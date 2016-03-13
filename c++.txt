@@ -456,7 +456,7 @@ public:
     virtual void f5();
     ...
 };
-    
+
 C1的虚函数表四个项
 ptr to implementation C1::~C1
 ptr to implementation C1::f1
@@ -526,4 +526,134 @@ std::string 类的析构函数是非虚的，也就是说你不应该从它派�
 将两种语言之间进行传递的东西限制在可以用c进行编译的数据结构范围内，C++版本的struct
 可以包含非虚成员函数，但是不可继承
 -------------------------------------------------------------------------------
+
+
+虚函数不能是template, 因为编译器需要知道虚函数表的的大小，模板成员函数到底会有多
+少个实例化并不知道
+
+
+
+===============================================================================
+smart pointer
+
+Empty Base Optimizing
+std::unique_ptr, 如果是stateless lambda, std::function作为deleter时，和raw point
+大小一样，利用空基类优化来优化空间
+
+std::auto_ptr为什么过时了
+
+
+• std::unique_ptr is a small, fast, move-only smart pointer for managing
+  resources with exclusive-ownership semantics.
+• By default, resource destruction takes place via delete, but custom deleters
+  can be specified. Stateful deleters and function pointers as deleters increase the
+  size of std::unique_ptr objects.
+• Converting a std::unique_ptr to a std::shared_ptr is easy.
+
+• std::shared_ptrs are twice the size of a raw pointer
+• Memory for the reference count must be dynamically allocated.
+• Increments and decrements of the reference count must be atomic
+
+• std::shared_ptr的move construct 和move assignment比copy版本要快
+
+    Move construction, that’s why. Move-constructing a std::shared_ptr from
+    another std::shared_ptr sets the source std::shared_ptr to null, and that means
+    that the old std::shared_ptr stops pointing to the resource at the moment the new
+    std::shared_ptr starts. As a result, no reference count manipulation is required.
+    Moving std::shared_ptrs is therefore faster than copying them: copying requires
+    incrementing the reference count, but moving doesn’t. This is as true for assignment
+    as for construction, so move construction is faster than copy construction, and move
+    assignment is faster than copy assignment.
+
+template<
+    class T,
+    class Deleter = std::default_delete<T>
+> class unique_ptr;
+
+template <
+      class T,
+      class Deleter
+> class unique_ptr<T[], Deleter>;
+
+template< class T > class shared_ptr;
+
+
+-------------------------------------------------------------------------------
+
+static_cast<> uses sensible, well-defined conversions. For example, the
+integer 10 would be converted to the double 10.0.
+
+reinterpret_cast<> just looks at the bits in memory in as if they were
+the encoding as a different type. For example, the integer 10 would
+look like some number who-knows-what as a double.
+
+There are two major differences:
+1. static_cast won't convert certain types (you'll get a compile error).
+2. when both will perform the conversion, the nature of the conversion is different.
+   static_cast 处理的是相关的转换 related
+
+static_cast has two uses:
+First it will force a conversion that could have happened implicitly.
+*********************************************************************
+For example:
+double value = 1.45;
+double remainder = value - static_cast<int>(value);
+
+Here we force a conversion that could be done implicitly with an extra temporary variable.
+The other use, is to reverse a defined conversion. If there is a valid forward conversion,
+******************************************************************************************
+in most cases you can reverse it with a static cast.
+****************************************************
+
+struct Base {
+};
+struct Derived : Base {
+};
+
+Derived d;
+Base* bp = &d; // implicit conversion.
+Derived* dp = static_cast<Derived*>(bp); // invert valid conversion.
+
+A reinterpret cast pretty much says, treat these bits as another type. Its results are implementation
+specific in most cases. You can do things like:
+char* foo = ...
+
+unsigned char* foo = reinterpret_cast<unsigned char*>(foo); // force type change!
+
+Needless to say you should think twice in general before doing this. The compiler will
+refuse to do the static_cast of the above types because they are unrelated (no conversion
+*****************************************************************************************
+defined in either direction).
+*****************************
+
+Now here's a case where they both casts will do something different (in many circumstances):
+
+struct BaseA {
+char a;
+};
+struct BaseB {
+char b;
+};
+struct Derived : BaseA, BaseB {
+};
+
+Derived d;
+BaseB* bp = static_cast<BaseB*>(&d); // valid: bp now points to BaseB subobject of d
+BaseB* rp = reinterpret_cast<BaseB*>(&d); // probably not valid, could result in rp pointing at
+// the BaseA memory in d but with the BaseB* type.
+
+
+
+
+
+===============================================================================
+C++ IDIOM
+
+1.Motivation
+    To extract out a type independent but type customizable functionality in a base
+    class and to mix-in that interface/property/behavior into a derived class,
+    customized for the derived class.
+Solution and Sample Code
+    In CRTP idiom, a class T, inherits from a template that specializes on T.
+    class T : public X<T> {…};
 
