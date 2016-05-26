@@ -1,0 +1,3 @@
+aci snat 原理
+http://www.cisco.com/c/en/us/td/docs/switches/datacenter/aci/apic/sw/1-x/openstack/b_APIC_OpenStack_Administration_Guide/b_APIC_OpenStack_Administration_Guide_chapter_0111.html
+
